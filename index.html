@@ -1,0 +1,3647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>便利店鹰眼系统</title>
+    <!-- 防止缓存 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <!-- 防止搜索引擎索引 -->
+    <meta name="robots" content="noindex, nofollow">
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .main-content {
+            display: none;
+            width: 100%;
+            max-width: 1600px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .description {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        /* 标签页样式 */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+            margin-right: 5px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+            color: #3498db;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Excel表格相关样式 */
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px;
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            background: #f8fafc;
+            margin-bottom: 30px;
+            transition: all 0.3s;
+        }
+
+        .upload-section:hover {
+            background: #e8f4ff;
+            border-color: #2980b9;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background 0.3s;
+            margin-top: 15px;
+        }
+
+        .upload-btn:hover {
+            background: #2980b9;
+        }
+
+        .file-name {
+            margin-top: 15px;
+            color: #7f8c8d;
+        }
+
+        .table-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+            align-items: center;
+        }
+
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .filter-input {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            min-width: 150px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+            /* position: relative; */
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+            position: sticky;
+            top: 0;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th:hover {
+            background-color: #2980b9;
+        }
+
+        th .sort-icon {
+            margin-left: 5px;
+            font-size: 12px;
+        }
+
+        .column-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        /* 登录相关样式 */
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .login-title {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .login-input {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .login-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .login-btn:hover {
+            background: #2980b9;
+        }
+
+        .login-error {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #e8f4ff;
+        }
+
+        .expired {
+            color: #e74c3c;
+            font-weight: 500;
+        }
+
+        .warning {
+            color: #f39c12;
+            font-weight: 500;
+        }
+
+        .normal {
+            color: #27ae60;
+            font-weight: 500;
+        }
+
+        .qr-cell {
+            text-align: center;
+            width: 100px;
+        }
+
+        .qr-code {
+            display: inline-block;
+            width: 80px;
+            height: 80px;
+            background: white;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .qr-code:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .qr-code:active {
+            transform: scale(0.95);
+        }
+
+        .sheet-selector {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .sheet-selector label {
+            margin-right: 10px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .sheet-selector select {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .instructions {
+            background: #e8f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #3498db;
+        }
+
+        .instructions h3 {
+            color: #3498db;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+            color: #2c3e50;
+            line-height: 1.5;
+        }
+
+        .message {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .download-btn {
+            background: #27ae60;
+            color: white;
+        }
+
+        .download-btn:hover {
+            background: #219653;
+        }
+
+        .toggle-column-btn {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .toggle-column-btn:hover {
+            background: #7f8c8d;
+        }
+
+        .filter-btn {
+            background: #9b59b6;
+            color: white;
+        }
+
+        .filter-btn:hover {
+            background: #8e44ad;
+        }
+
+        .decode-status {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 6px;
+            background: #2c3e50;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .decode-status.show {
+            opacity: 1;
+        }
+
+        .decode-status.success {
+            background: #27ae60;
+        }
+
+        .decode-status.error {
+            background: #e74c3c;
+        }
+
+        .hidden-column {
+            display: none;
+        }
+
+        /* 扫描器相关样式 */
+        .scanner-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            background: #000;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .scanning-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid #3498db;
+            box-sizing: border-box;
+            pointer-events: none;
+        }
+
+        .scan-line {
+            position: absolute;
+            height: 2px;
+            width: 100%;
+            background: #3498db;
+            top: 50%;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% {
+                top: 10%;
+            }
+
+            100% {
+                top: 90%;
+            }
+        }
+
+        .scanner-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #219653;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .search-section {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .status-message {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .permission-help {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+
+        .permission-help h3 {
+            margin-bottom: 10px;
+            color: #856404;
+        }
+
+        .permission-help ul {
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+
+        .permission-help li {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .voice-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .voice-select {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            min-width: 200px;
+        }
+
+        .column-visibility {
+            margin-top: 15px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .column-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .column-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Edge浏览器特定修复 */
+        .edge-fix {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+
+        .edge-fix h3 {
+            color: #1565c0;
+            margin-bottom: 10px;
+        }
+
+        .edge-fix ol {
+            padding-left: 20px;
+        }
+
+        .edge-fix li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        /* 扫描模式选择器样式 */
+        .scan-mode-selector {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .scan-mode-btn {
+            padding: 10px 20px;
+            border: 2px solid #3498db;
+            border-radius: 6px;
+            background: white;
+            color: #3498db;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .scan-mode-btn.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .scan-mode-btn:hover {
+            background: #2980b9;
+            color: white;
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            th,
+            td {
+                padding: 8px 10px;
+                font-size: 14px;
+            }
+
+            .table-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .scanner-controls {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab {
+                margin-bottom: 5px;
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+
+            .video-container {
+                min-height: 250px;
+            }
+
+            .instructions,
+            .permission-help,
+            .edge-fix {
+                font-size: 14px;
+            }
+
+            .upload-section {
+                padding: 20px;
+            }
+
+            .upload-btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+
+            .scan-mode-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .scan-mode-btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        /* 摄像头权限请求按钮 */
+        .permission-request {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            margin: 10px 0;
+            transition: background 0.3s;
+        }
+
+        .permission-request:hover {
+            background: #f57c00;
+        }
+
+        .camera-permission {
+            text-align: center;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 登录页面 -->
+    <div id="login-screen">
+        <div class="login-container">
+            <h2 class="login-title">系统登录</h2>
+            <form id="login-form" class="login-form">
+                <input type="text" id="username" class="login-input" placeholder="请输入用户名" required>
+                <input type="password" id="password" class="login-input" placeholder="请输入密码" required>
+                <button type="submit" class="login-btn">登录</button>
+                <div id="login-error" class="login-error"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 主内容区域 - 登录后显示 -->
+    <div class="main-content">
+        <h1>便利店鹰眼系统</h1>
+        <p class="description">哈密公司</p>
+
+        <div class="container">
+            <!-- 标签页导航 -->
+            <div class="tabs">
+                <div class="tab active" data-tab="excel-tab">Excel表格</div>
+                <div class="tab" data-tab="scanner-tab">工具选择</div>
+            </div>
+
+            <!-- Excel表格标签页 -->
+            <div id="excel-tab" class="tab-content active">
+                <div class="upload-section" id="drop-area">
+                    <div class="upload-icon">📊</div>
+                    <p>拖放Excel文件到此处，或点击下方按钮上传</p>
+                    <input type="file" id="file-input" class="file-input" accept=".xlsx, .xls">
+                    <button class="upload-btn" id="upload-btn">选择Excel文件</button>
+                    <p class="file-name" id="file-name">未选择文件</p>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>正在处理Excel文件，请稍候...</p>
+                </div>
+
+                <div class="message info">
+                    <strong>提示：</strong> 系统会根据"条码内容"列的内容自动生成对应的条形码，使用扫描枪可扫描识别
+                </div>
+
+                <div class="sheet-selector">
+                    <label for="sheet-select">选择工作表:</label>
+                    <select id="sheet-select"></select>
+                </div>
+
+                <div class="table-controls">
+                    <div class="filter-controls">
+                        <input type="text" id="global-filter" class="filter-input" placeholder="全局搜索...">
+                        <button class="action-btn filter-btn" id="apply-filter">应用筛选</button>
+                        <button class="action-btn" id="clear-filter">清除筛选</button>
+                    </div>
+
+                    <button class="action-btn toggle-column-btn" id="toggle-columns-btn">显示/隐藏列</button>
+                </div>
+
+                <div class="column-visibility" id="column-visibility" style="display: none;">
+                    <h3>列显示设置</h3>
+                    <div class="column-checkboxes" id="column-checkboxes">
+                        <!-- 列复选框将动态生成 -->
+                    </div>
+                </div>
+
+                <div class="voice-controls">
+                    <label for="voice-select">选择语音:</label>
+                    <select id="voice-select" class="voice-select"></select>
+                </div>
+
+                <div class="table-container">
+                    <table id="data-table">
+                        <thead id="table-header">
+                            <!-- 表头将通过JavaScript动态填充 -->
+                        </thead>
+                        <tbody id="table-body">
+                            <!-- 数据将通过JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="instructions">
+                    <h3>使用说明</h3>
+                    <ul>
+                        <li>支持.xlsx和.xls格式的Excel文件</li>
+                        <li>上传后会自动解析并显示第一个工作表的内容</li>
+                        <li>系统会根据"条码内容"列的内容自动生成对应的条形码</li>
+                        <li>使用扫描枪可以扫描识别条码内容</li>
+                        <li>使用表头下拉菜单可以筛选和排序数据</li>
+                        <li>使用"显示/隐藏列"按钮可以控制列的可见性</li>
+                        <li>使用全局搜索框可以筛选表格内容</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 扫描器标签页 -->
+            <div id="scanner-tab" class="tab-content">
+                <!-- 扫描方式选择器 -->
+                <div class="scan-method-selector">
+                    <button class="method-btn active" data-method="camera">摄像头扫描</button>
+                    <button class="method-btn" data-method="scanner">扫描枪输入</button>
+                </div>
+
+                <!-- 摄像头扫描区域 -->
+                <div id="camera-scan-area" class="scan-area">
+                    <div class="camera-permission">
+                        <h3>摄像头访问权限</h3>
+                        <p>请点击下方按钮允许访问摄像头</p>
+                        <button id="permission-btn" class="permission-request">允许摄像头访问</button>
+                    </div>
+
+                    <div class="scanner-section">
+                        <!-- 添加扫描模式选择器 -->
+                        <div class="scan-mode-selector">
+                            <button class="scan-mode-btn active" data-mode="auto">自动识别</button>
+                            <button class="scan-mode-btn" data-mode="qr">二维码</button>
+                            <button class="scan-mode-btn" data-mode="barcode">条形码</button>
+                        </div>
+
+                        <div class="video-container" id="video-container">
+                            <div id="camera-placeholder">摄像头未启动</div>
+                            <video id="video" playsinline style="display: none;"></video>
+                            <div class="scanning-overlay" style="display: none;">
+                                <div class="scan-line"></div>
+                            </div>
+                        </div>
+
+                        <div class="scanner-controls">
+                            <button id="start-btn" class="btn btn-primary">开始扫描</button>
+                            <button id="stop-btn" class="btn btn-danger" disabled>停止扫描</button>
+                            <button id="switch-camera" class="btn btn-success">切换摄像头</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 扫描枪输入区域 -->
+                <div id="scanner-input-area" class="scan-area" style="display: none;">
+                    <div class="scanner-input-section">
+                        <h3>扫描枪输入</h3>
+                        <p>请将光标放在输入框中，然后用扫描枪扫描商品条码</p>
+                        <input type="text" id="scanner-input" class="scanner-input" placeholder="扫描枪输入将显示在这里..."
+                            autofocus>
+                        <div class="scanner-tips">
+                            <p><strong>提示：</strong>扫描枪输入通常会以快速输入的数字序列形式出现，并自动以回车结束</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="status-message" class="status-message"></div>
+                <div class="search-section">
+                    <input type="text" id="search-input" class="search-input" placeholder="扫描结果将显示在这里...">
+                </div>
+
+                <div id="status-message" class="status-message info">
+                    请选择扫描方式并开始扫描
+
+                    <div class="edge-fix">
+                        <h3>Edge浏览器摄像头问题解决方案</h3>
+                        <ol>
+                            <li>点击地址栏左侧的锁形图标</li>
+                            <li>确保"摄像头"权限设置为"允许"</li>
+                            <li>如果使用手机，请检查系统设置中的Edge浏览器权限</li>
+                            <li>尝试重启浏览器或清除站点数据后重新访问</li>
+                            <li>确保网站通过HTTPS访问（当前状态: <span id="https-status">检查中...</span>）</li>
+                        </ol>
+                    </div>
+        <!-- 解码状态提示 -->
+        <div class="decode-status" id="decode-status"></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 检查HTTPS状态
+            const httpsStatus = document.getElementById('https-status');
+            httpsStatus.textContent = window.location.protocol === 'https:' ? '安全连接 (HTTPS)' : '非安全连接 (HTTP)';
+            httpsStatus.style.color = window.location.protocol === 'https:' ? '#27ae60' : '#e74c3c';
+
+            // ==================== 标签页切换功能 ====================
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+
+                    // 更新标签页激活状态
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(tc => tc.classList.remove('active'));
+
+                    tab.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+
+                    // 如果切换到扫描标签页，停止Excel相关的语音
+                    if (tabId === 'scanner-tab') {
+                        window.speechSynthesis.cancel();
+                    } else if (tabId === 'excel-tab') {
+                        // 停止扫描器
+                        stopScanner();
+                    }
+                });
+            });
+
+            // ==================== 扫描方式选择功能 ====================
+            const methodBtns = document.querySelectorAll('.method-btn');
+            const cameraScanArea = document.getElementById('camera-scan-area');
+            const scannerInputArea = document.getElementById('scanner-input-area');
+            const scannerInput = document.getElementById('scanner-input');
+
+            // 扫描方式切换
+            methodBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    // 更新按钮状态
+                    methodBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // 获取选择的扫描方式
+                    const method = this.getAttribute('data-method');
+
+                    // 根据选择的方式显示对应的扫描区域
+                    if (method === 'camera') {
+                        cameraScanArea.style.display = 'block';
+                        scannerInputArea.style.display = 'none';
+                        statusMessage.textContent = '请点击"开始扫描"按钮启动摄像头';
+                        statusMessage.className = 'status-message info';
+                    } else if (method === 'scanner') {
+                        cameraScanArea.style.display = 'none';
+                        scannerInputArea.style.display = 'block';
+                        scannerInput.focus(); // 自动聚焦到输入框
+                        statusMessage.textContent = '扫描枪就绪，请扫描商品条码';
+                        statusMessage.className = 'status-message info';
+
+                        // 如果摄像头正在扫描，停止它
+                        stopScanner();
+                    }
+                });
+            });
+
+            // ==================== 扫描枪输入处理 ====================
+            let scannerInputBuffer = '';
+            let lastInputTime = 0;
+            const SCAN_DELAY = 100; // 扫描输入的字符间隔阈值（毫秒）
+
+            // 监听键盘输入
+            document.addEventListener('keydown', function (e) {
+                // 只有当扫描枪输入区域显示时才处理键盘输入
+                if (scannerInputArea.style.display !== 'none') {
+                    const now = new Date().getTime();
+                    const timeBetweenChars = now - lastInputTime;
+                    lastInputTime = now;
+
+                    // 如果字符输入速度很快，判断为扫描枪输入
+                    if (e.key.length === 1 && timeBetweenChars < SCAN_DELAY) {
+                        scannerInputBuffer += e.key;
+
+                        // 当检测到回车符时，认为扫描完成
+                        if (e.key === 'Enter') {
+                            e.preventDefault(); // 阻止默认的回车行为
+
+                            // 处理扫描结果
+                            const scanResult = scannerInputBuffer.trim();
+                            if (scanResult) {
+                                processScannerInput(scanResult);
+                            }
+
+                            // 清空输入缓冲区
+                            scannerInputBuffer = '';
+                        }
+                    } else if (e.key === 'Enter' && scannerInput.value.trim()) {
+                        // 处理手动输入的回车
+                        e.preventDefault();
+                        processScannerInput(scannerInput.value.trim());
+                    } else {
+                        // 重置缓冲区，可能是手动输入
+                        scannerInputBuffer = '';
+                    }
+                }
+            });
+
+            // 处理扫描枪输入结果
+            function processScannerInput(result) {
+                // 设置输入框的值
+                scannerInput.value = result;
+                searchInput.value = result;
+                globalFilter.value = result;
+
+                // 显示扫描结果
+                showResult(result, '扫描枪');
+
+                // 短暂延迟后清空输入框，准备下一次扫描
+                setTimeout(() => {
+                    scannerInput.value = '';
+                    scannerInput.focus();
+                }, 1000);
+            }
+
+            // ==================== 扫描模式选择功能 ====================
+            const scanModeBtns = document.querySelectorAll('.scan-mode-btn');
+            let currentScanMode = 'auto'; // 默认自动模式
+
+            // 设置扫描模式
+            scanModeBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    // 更新按钮状态
+                    scanModeBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    // 更新扫描模式
+                    currentScanMode = this.getAttribute('data-mode');
+                    statusMessage.textContent = `已切换到${getModeName(currentScanMode)}模式`;
+                    statusMessage.className = 'status-message info';
+
+                    // 如果扫描正在进行，重新启动以应用新模式
+                    if (scanInterval) {
+                        stopScanner();
+                        setTimeout(startScanner, 300);
+                    }
+                });
+            });
+
+            // 获取模式名称
+            function getModeName(mode) {
+                switch (mode) {
+                    case 'auto': return '自动识别';
+                    case 'qr': return '二维码';
+                    case 'barcode': return '条形码';
+                    default: return '自动识别';
+                }
+            }
+
+            // ==================== 摄像头权限处理 ====================
+            const permissionBtn = document.getElementById('permission-btn');
+            const video = document.getElementById('video');
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const switchCameraBtn = document.getElementById('switch-camera');
+            const searchInput = document.getElementById('search-input');
+            const statusMessage = document.getElementById('status-message');
+            const cameraPlaceholder = document.getElementById('camera-placeholder');
+            const scanningOverlay = document.querySelector('.scanning-overlay');
+            const globalFilter = document.getElementById('global-filter');
+            let stream = null;
+            let usingFrontCamera = false;
+            let scanInterval = null;
+            let hasCameraPermission = false;
+
+            // 检查摄像头权限状态
+            async function checkCameraPermission() {
+                try {
+                    if (navigator.permissions && navigator.permissions.query) {
+                        const permissionStatus = await navigator.permissions.query({ name: 'camera' });
+                        updatePermissionUI(permissionStatus.state);
+
+                        permissionStatus.onchange = () => {
+                            updatePermissionUI(permissionStatus.state);
+                        };
+                    }
+                } catch (error) {
+                    console.log('权限API不可用:', error);
+                }
+            }
+
+            function updatePermissionUI(state) {
+                hasCameraPermission = state === 'granted';
+
+                if (state === 'granted') {
+                    statusMessage.textContent = '摄像头权限已授予';
+                    statusMessage.className = 'status-message success';
+                    permissionBtn.style.display = 'none';
+                    document.querySelector('.camera-permission').style.display = 'none';
+                } else if (state === 'prompt') {
+                    statusMessage.textContent = '请点击"允许摄像头访问"按钮';
+                    statusMessage.className = 'status-message info';
+                    permissionBtn.style.display = 'block';
+                } else if (state === 'denied') {
+                    statusMessage.textContent = '摄像头权限被拒绝，请在浏览器设置中允许访问';
+                    statusMessage.className = 'status-message error';
+                    permissionBtn.style.display = 'block';
+                    permissionBtn.textContent = '重新请求权限';
+                }
+            }
+
+            // 请求摄像头权限
+            permissionBtn.addEventListener('click', async () => {
+                try {
+                    statusMessage.textContent = '请求摄像头权限中...';
+                    statusMessage.className = 'status-message info';
+
+                    // 尝试获取摄像头权限
+                    const testStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: false
+                    });
+
+                    // 立即关闭测试流
+                    testStream.getTracks().forEach(track => track.stop());
+
+                    statusMessage.textContent = '摄像头权限已获得，请点击"开始扫描"';
+                    statusMessage.className = 'status-message success';
+                    permissionBtn.style.display = 'none';
+                    document.querySelector('.camera-permission').style.display = 'none';
+                    hasCameraPermission = true;
+
+                } catch (error) {
+                    console.error('摄像头权限请求失败:', error);
+
+                    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                        statusMessage.textContent = '权限被拒绝，请在浏览器设置中允许摄像头访问';
+                        statusMessage.className = 'status-message error';
+
+                        // 显示详细的权限指导
+                        document.querySelector('.edge-fix').style.display = 'block';
+                    } else {
+                        statusMessage.textContent = `无法访问摄像头: ${error.message}`;
+                        statusMessage.className = 'status-message error';
+                    }
+                }
+            });
+
+            // 优化用的全局变量
+            let scanningCanvas = null;
+            let scanningContext = null;
+            let overlayCanvas = null;
+            let overlayContext = null;
+            let scanLineY = 0;
+            let scanLineDirection = 1;
+            let scanLineAnimationInterval = null;
+            let lastScannedCode = null;
+            let lastScanTimestamp = 0;
+            const SCAN_DEBOUNCE_MS = 1000; // 防抖时间，避免重复扫描
+            
+            // 创建覆盖层canvas用于绘制扫描框和扫描线
+            function createOverlayCanvas() {
+                if (!overlayCanvas) {
+                    overlayCanvas = document.createElement('canvas');
+                    overlayCanvas.className = 'scanning-overlay-canvas';
+                    overlayCanvas.style.position = 'absolute';
+                    overlayCanvas.style.top = '0';
+                    overlayCanvas.style.left = '0';
+                    overlayCanvas.style.pointerEvents = 'none';
+                    cameraScanArea.appendChild(overlayCanvas);
+                    overlayContext = overlayCanvas.getContext('2d');
+                }
+            }
+            
+            // 绘制扫描框和扫描线
+            function drawScanningOverlay() {
+                if (!overlayContext || !video) return;
+                
+                const width = video.offsetWidth;
+                const height = video.offsetHeight;
+                
+                overlayCanvas.width = width;
+                overlayCanvas.height = height;
+                
+                // 清空画布
+                overlayContext.clearRect(0, 0, width, height);
+                
+                // 绘制半透明遮罩
+                overlayContext.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                overlayContext.fillRect(0, 0, width, height);
+                
+                // 计算扫描框大小（居中，宽高比4:3）
+                const scanBoxWidth = Math.min(width * 0.7, height * 0.7 * 4/3);
+                const scanBoxHeight = scanBoxWidth * 3/4;
+                const scanBoxX = (width - scanBoxWidth) / 2;
+                const scanBoxY = (height - scanBoxHeight) / 2;
+                
+                // 清除扫描框区域的遮罩（创建透明区域）
+                overlayContext.clearRect(scanBoxX, scanBoxY, scanBoxWidth, scanBoxHeight);
+                
+                // 绘制扫描框边框
+                overlayContext.strokeStyle = '#00ff00';
+                overlayContext.lineWidth = 2;
+                overlayContext.strokeRect(scanBoxX, scanBoxY, scanBoxWidth, scanBoxHeight);
+                
+                // 绘制扫描框四个角
+                const cornerLength = 20;
+                const cornerWidth = 4;
+                overlayContext.lineWidth = cornerWidth;
+                
+                // 左上角
+                overlayContext.beginPath();
+                overlayContext.moveTo(scanBoxX, scanBoxY + cornerLength);
+                overlayContext.lineTo(scanBoxX, scanBoxY);
+                overlayContext.lineTo(scanBoxX + cornerLength, scanBoxY);
+                overlayContext.stroke();
+                
+                // 右上角
+                overlayContext.beginPath();
+                overlayContext.moveTo(scanBoxX + scanBoxWidth - cornerLength, scanBoxY);
+                overlayContext.lineTo(scanBoxX + scanBoxWidth, scanBoxY);
+                overlayContext.lineTo(scanBoxX + scanBoxWidth, scanBoxY + cornerLength);
+                overlayContext.stroke();
+                
+                // 右下角
+                overlayContext.beginPath();
+                overlayContext.moveTo(scanBoxX + scanBoxWidth, scanBoxY + scanBoxHeight - cornerLength);
+                overlayContext.lineTo(scanBoxX + scanBoxWidth, scanBoxY + scanBoxHeight);
+                overlayContext.lineTo(scanBoxX + scanBoxWidth - cornerLength, scanBoxY + scanBoxHeight);
+                overlayContext.stroke();
+                
+                // 左下角
+                overlayContext.beginPath();
+                overlayContext.moveTo(scanBoxX + cornerLength, scanBoxY + scanBoxHeight);
+                overlayContext.lineTo(scanBoxX, scanBoxY + scanBoxHeight);
+                overlayContext.lineTo(scanBoxX, scanBoxY + scanBoxHeight - cornerLength);
+                overlayContext.stroke();
+                
+                // 更新扫描线位置
+                scanLineY += scanLineDirection * 2;
+                if (scanLineY < scanBoxY || scanLineY > scanBoxY + scanBoxHeight) {
+                    scanLineDirection *= -1;
+                }
+                
+                // 绘制扫描线
+                const gradient = overlayContext.createLinearGradient(scanBoxX, scanLineY, scanBoxX + scanBoxWidth, scanLineY);
+                gradient.addColorStop(0, 'rgba(0, 255, 0, 0)');
+                gradient.addColorStop(0.5, 'rgba(0, 255, 0, 0.8)');
+                gradient.addColorStop(1, 'rgba(0, 255, 0, 0)');
+                
+                overlayContext.fillStyle = gradient;
+                overlayContext.fillRect(scanBoxX, scanLineY - 1, scanBoxWidth, 3);
+            }
+            
+            // 启动扫描器
+            async function startScanner() {
+                if (!hasCameraPermission) {
+                    statusMessage.textContent = '请先允许摄像头访问权限';
+                    statusMessage.className = 'status-message error';
+                    return;
+                }
+
+                // 清空之前的扫描结果，允许直接扫描下一个商品
+                searchInput.value = '';
+                globalFilter.value = '';
+                lastScannedCode = null;
+                
+                try {
+                    statusMessage.textContent = '正在启动摄像头...';
+                    statusMessage.className = 'status-message info';
+
+                    // 获取摄像头媒体流 - 优化配置类似微信扫一扫
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: usingFrontCamera ? 'user' : 'environment',
+                            width: { ideal: 1280 },  // 提高分辨率以获得更好的图像质量
+                            height: { ideal: 720 },
+                            frameRate: { ideal: 30 },
+                            focusMode: 'continuous',  // 连续自动对焦
+                            exposureMode: 'continuous',  // 连续自动曝光
+                            whiteBalanceMode: 'continuous'  // 连续自动白平衡
+                        },
+                        audio: false
+                    });
+
+                    // 设置视频元素源
+                    video.srcObject = stream;
+
+                    // 显示视频元素，隐藏占位符
+                    video.style.display = 'block';
+                    cameraPlaceholder.style.display = 'none';
+                    scanningOverlay.style.display = 'block';
+                    
+                    // 创建并显示覆盖层
+                    createOverlayCanvas();
+                    
+                    // 开始扫描线动画
+                    scanLineAnimationInterval = setInterval(drawScanningOverlay, 30);
+
+                    // 播放视频
+                    await video.play();
+
+                    // 更新按钮状态
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+
+                    statusMessage.textContent = '请将商品条形码对准扫描框，支持远距离快速识别';
+                    statusMessage.className = 'status-message success';
+
+                    // 开始扫描 - 优化扫描间隔
+                    scanInterval = setInterval(scanForBarcodes, 100);
+                    
+                    // 预创建canvas以避免重复创建
+                    if (!scanningCanvas) {
+                        scanningCanvas = document.createElement('canvas');
+                        scanningContext = scanningCanvas.getContext('2d');
+                    }
+
+                } catch (error) {
+                    console.error('启动摄像头失败:', error);
+                    statusMessage.textContent = `无法启动摄像头: ${error.message}`;
+                    statusMessage.className = 'status-message error';
+
+                    // 显示权限请求按钮
+                    permissionBtn.style.display = 'block';
+                    document.querySelector('.camera-permission').style.display = 'block';
+                }
+            }
+
+            // 停止扫描器
+            function stopScanner() {
+                if (scanInterval) {
+                    clearInterval(scanInterval);
+                    scanInterval = null;
+                }
+                
+                // 停止扫描线动画
+                if (scanLineAnimationInterval) {
+                    clearInterval(scanLineAnimationInterval);
+                    scanLineAnimationInterval = null;
+                }
+
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+
+                video.srcObject = null;
+                video.style.display = 'none';
+                cameraPlaceholder.style.display = 'block';
+                scanningOverlay.style.display = 'none';
+                
+                // 清除覆盖层内容
+                if (overlayContext) {
+                    overlayContext.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                }
+
+                // 更新按钮状态
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+
+                statusMessage.textContent = '扫描已停止';
+                statusMessage.className = 'status-message info';
+                
+                // 重置canvas大小以释放内存
+                if (scanningCanvas) {
+                    scanningCanvas.width = 1;
+                    scanningCanvas.height = 1;
+                }
+            }
+
+            // 切换摄像头
+            async function switchCamera() {
+                usingFrontCamera = !usingFrontCamera;
+                stopScanner();
+
+                // 短暂延迟后重新启动，确保摄像头切换完成
+                setTimeout(startScanner, 300);
+            }
+
+            // 图像预处理函数 - 增强对比度和锐化
+            function preprocessImageData(imageData) {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                
+                // 创建新的ImageData用于处理
+                const processedData = new Uint8ClampedArray(data.length);
+                
+                // 自适应对比度增强
+                let min = 255;
+                let max = 0;
+                
+                // 先找到亮度的最小值和最大值
+                for (let i = 0; i < data.length; i += 4) {
+                    const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    min = Math.min(min, brightness);
+                    max = Math.max(max, brightness);
+                }
+                
+                // 增强对比度
+                const range = max - min || 1;
+                for (let i = 0; i < data.length; i += 4) {
+                    // 计算亮度
+                    let brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    
+                    // 应用对比度增强
+                    brightness = ((brightness - min) / range) * 255;
+                    brightness = Math.min(255, Math.max(0, brightness));
+                    
+                    // 创建二值化效果 - 提高条码可读性
+                    const threshold = 128;
+                    const binaryValue = brightness > threshold ? 255 : 0;
+                    
+                    processedData[i] = binaryValue;     // R
+                    processedData[i + 1] = binaryValue; // G
+                    processedData[i + 2] = binaryValue; // B
+                    processedData[i + 3] = data[i + 3]; // A
+                }
+                
+                return new ImageData(processedData, width, height);
+            }
+            
+            // 验证条形码有效性
+            function isValidBarcode(code) {
+                // 确保是字符串且不为空
+                if (typeof code !== 'string' || !code.trim()) return false;
+                
+                // 移除可能的空格
+                code = code.replace(/\s/g, '');
+                
+                // 检查长度 - 常见条码长度
+                const validLengths = [8, 12, 13, 14, 16, 17];
+                if (!validLengths.includes(code.length)) return false;
+                
+                // 检查是否只包含数字
+                if (!/^\d+$/.test(code)) {
+                    // 对于Code128等可能包含字母的条码，允许字母数字
+                    if (!/^[A-Z0-9]+$/i.test(code)) return false;
+                }
+                
+                // EAN-13校验
+                if (code.length === 13) {
+                    let sum = 0;
+                    for (let i = 0; i < 12; i++) {
+                        const digit = parseInt(code[i]);
+                        sum += i % 2 === 0 ? digit : digit * 3;
+                    }
+                    const checksum = (10 - (sum % 10)) % 10;
+                    if (parseInt(code[12]) !== checksum) return false;
+                }
+                
+                return true;
+            }
+            
+            // 扫描条码 - 优化版本，类似微信扫一扫
+            function scanForBarcodes() {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    // 复用已创建的canvas以提高性能
+                    scanningCanvas.width = video.videoWidth;
+                    scanningCanvas.height = video.videoHeight;
+                    
+                    const videoWidth = video.videoWidth;
+                    const videoHeight = video.videoHeight;
+
+                    // 绘制当前视频帧
+                    scanningContext.drawImage(video, 0, 0, videoWidth, videoHeight);
+                    
+                    // 计算扫描区域（类似微信的中央扫描框）
+                    const scanBoxWidth = Math.min(videoWidth * 0.8, videoHeight * 0.8 * 4/3);
+                    const scanBoxHeight = scanBoxWidth * 3/4;
+                    const scanBoxX = (videoWidth - scanBoxWidth) / 2;
+                    const scanBoxY = (videoHeight - scanBoxHeight) / 2;
+                    
+                    // 获取扫描区域的图像数据
+                    const imageData = scanningContext.getImageData(scanBoxX, scanBoxY, scanBoxWidth, scanBoxHeight);
+                    
+                    // 对图像进行预处理以提高识别率
+                    const processedData = preprocessImageData(imageData);
+                    
+                    // 在canvas上绘制处理后的图像（可选，用于调试）
+                    // scanningContext.putImageData(processedData, scanBoxX, scanBoxY);
+                    
+                    // 多分辨率扫描策略
+                    const resolutions = [
+                        { scale: 1.0 },    // 原始大小
+                        { scale: 0.8 },    // 缩小一点
+                        { scale: 0.6 }     // 缩小更多
+                    ];
+                    
+                    // 尝试在不同分辨率下扫描
+                    for (const res of resolutions) {
+                        const scaledWidth = Math.floor(scanBoxWidth * res.scale);
+                        const scaledHeight = Math.floor(scanBoxHeight * res.scale);
+                        
+                        // 创建临时canvas用于缩放
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = scaledWidth;
+                        tempCanvas.height = scaledHeight;
+                        const tempContext = tempCanvas.getContext('2d');
+                        
+                        // 缩放图像
+                        tempContext.putImageData(processedData, 0, 0);
+                        const scaledImageData = tempContext.getImageData(0, 0, scaledWidth, scaledHeight);
+                        
+                        // 二维码扫描
+                        if (currentScanMode === 'qr' || currentScanMode === 'auto') {
+                            const qrCode = jsQR(scaledImageData.data, scaledImageData.width, scaledImageData.height, {
+                                inversionAttempts: 'attemptBoth', // 尝试正向和反向识别
+                                greyScaleWeights: [0.299, 0.587, 0.114] // 标准RGB权重
+                            });
+
+                            if (qrCode && isValidBarcode(qrCode.data)) {
+                                const now = Date.now();
+                                // 防抖处理
+                                if (qrCode.data !== lastScannedCode || now - lastScanTimestamp > SCAN_DEBOUNCE_MS) {
+                                    lastScannedCode = qrCode.data;
+                                    lastScanTimestamp = now;
+                                    
+                                    // 高亮显示找到的二维码
+                                    if (overlayContext) {
+                                        const cornerPoints = qrCode.location.cornerPoints;
+                                        overlayContext.strokeStyle = '#00ff00';
+                                        overlayContext.lineWidth = 3;
+                                        overlayContext.beginPath();
+                                        overlayContext.moveTo(cornerPoints[0].x + scanBoxX, cornerPoints[0].y + scanBoxY);
+                                        for (let i = 1; i < cornerPoints.length; i++) {
+                                            overlayContext.lineTo(cornerPoints[i].x + scanBoxX, cornerPoints[i].y + scanBoxY);
+                                        }
+                                        overlayContext.closePath();
+                                        overlayContext.stroke();
+                                    }
+                                    
+                                    searchInput.value = qrCode.data;
+                                    globalFilter.value = qrCode.data;
+                                    showResult(qrCode.data, '二维码');
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 条形码扫描 - 使用不同的方法
+                    if (currentScanMode === 'barcode' || currentScanMode === 'auto') {
+                        try {
+                            // 创建用于Quagga的图像数据
+                            const barcodeCanvas = document.createElement('canvas');
+                            barcodeCanvas.width = scanBoxWidth;
+                            barcodeCanvas.height = scanBoxHeight;
+                            const barcodeContext = barcodeCanvas.getContext('2d');
+                            barcodeContext.putImageData(processedData, 0, 0);
+                            
+                            // 使用Quagga解码条形码 - 高度优化配置
+                            Quagga.decodeSingle({
+                                decoder: {
+                                    readers: [
+                                        'code_128_reader', 
+                                        'ean_reader', 
+                                        'upc_reader', 
+                                        'code_39_reader',
+                                        'code_93_reader',
+                                        'codabar_reader',
+                                        'ean_8_reader'
+                                    ],
+                                    multiple: false,
+                                    halfSample: true,  // 提高速度
+                                    patchSize: 'medium' // 平衡速度和精度
+                                },
+                                locate: true,
+                                src: barcodeCanvas.toDataURL(),
+                                numOfWorkers: navigator.hardwareConcurrency || 4,
+                                frequency: 15, // 更高的定位频率
+                                // 增强配置
+                                locate: {
+                                    halfSample: true,
+                                    patchSize: 'medium',
+                                    debug: false
+                                }
+                            }, function (result) {
+                                if (result && result.codeResult && isValidBarcode(result.codeResult.code)) {
+                                    const barcode = result.codeResult.code;
+                                    const now = Date.now();
+                                    
+                                    // 防抖处理
+                                    if (barcode !== lastScannedCode || now - lastScanTimestamp > SCAN_DEBOUNCE_MS) {
+                                        lastScannedCode = barcode;
+                                        lastScanTimestamp = now;
+                                        
+                                        // 高亮显示找到的条形码
+                                        if (overlayContext && result.box) {
+                                            const box = result.box;
+                                            overlayContext.strokeStyle = '#00ff00';
+                                            overlayContext.lineWidth = 3;
+                                            overlayContext.strokeRect(
+                                                box.x + scanBoxX,
+                                                box.y + scanBoxY,
+                                                box.width,
+                                                box.height
+                                            );
+                                        }
+                                        
+                                        searchInput.value = barcode;
+                                        globalFilter.value = barcode;
+                                        showResult(barcode, '条形码');
+                                    }
+                                }
+                            });
+                        } catch (error) {
+                            console.error('条形码解码错误:', error);
+                        }
+                    }
+                }
+            }
+
+            // 显示扫描结果
+            function showResult(result, type) {
+                // 显示成功状态
+                statusMessage.textContent = `成功扫描${type}: ${result}`;
+                statusMessage.className = 'status-message success';
+
+                // 自动停止扫描
+                stopScanner();
+
+                // 检查商品状态并显示提示
+                checkProductStatus(result);
+
+                // 3秒后恢复初始状态
+                setTimeout(() => {
+                    statusMessage.textContent = '扫描完成，点击"开始扫描"再次扫描';
+                    statusMessage.className = 'status-message info';
+                }, 3000);
+            }
+
+            // 检查商品状态并显示提示
+            function checkProductStatus(scanResult) {
+                if (!currentData || currentData.length === 0) {
+                    statusMessage.textContent = '请先上传商品表格';
+                    statusMessage.className = 'status-message error';
+                    return;
+                }
+
+                // 在当前数据中查找匹配的商品
+                const matchingProducts = currentData.filter(row => {
+                    return row.some(cell => {
+                        if (cell !== null && cell !== undefined) {
+                            return cell.toString().includes(scanResult);
+                        }
+                        return false;
+                    });
+                });
+
+                if (matchingProducts.length === 0) {
+                    statusMessage.textContent = '未找到匹配的商品信息';
+                    statusMessage.className = 'status-message warning';
+                    return;
+                }
+
+                // 获取表头信息 - 从displaySheet函数中获取的全局变量或者重新获取
+                let headers = [];
+                if (currentWorkbook && currentSheetIndex !== undefined) {
+                    const worksheet = currentWorkbook.Sheets[currentWorkbook.SheetNames[currentSheetIndex]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    if (jsonData.length > 0) {
+                        headers = jsonData[0];
+                    }
+                }
+                
+                // 检查商品状态
+                const productInfo = checkSingleProductStatus(matchingProducts[0], headers);
+                
+                // 智能计算提醒优先级和处理建议
+                const intelligentAlert = intelligentExpirationAnalysis(productInfo);
+                
+                // 显示智能商品状态提示
+                if (productInfo.isExpired) {
+                    showCustomAlert('鹰眼系统提示您', `⚠️ 商品过期警告 ⚠️\n\n商品条码: ${productInfo.productName}\n过期日期: ${productInfo.expireDate}\n状态: 已过期\n当前库存: ${productInfo.stock}\n优先级: ${intelligentAlert.priority}\n处理建议: ${intelligentAlert.recommendation}\n\n请立即下架此商品！`, null, 'warning');
+                } else if (productInfo.isSoonExpired) {
+                    showCustomAlert('鹰眼系统提示您', `⚠️ 商品临期提醒 ⚠️\n\n商品条码: ${productInfo.productName}\n过期日期: ${productInfo.expireDate}\n状态: 即将过期\n剩余天数: ${productInfo.daysRemaining}天\n当前库存: ${productInfo.stock}\n过期风险: ${intelligentAlert.riskLevel}\n优先级: ${intelligentAlert.priority}\n处理建议: ${intelligentAlert.recommendation}\n\n请及时申请促销政策`, null, 'warning');
+                } else {
+                    showCustomAlert('鹰眼系统提示您', `✅ 商品状态正常 ✅\n\n商品条码: ${productInfo.productName}\n过期日期: ${productInfo.expireDate || '未设置'}\n状态: 正常\n当前库存: ${productInfo.stock}\n过期风险预测: ${intelligentAlert.riskLevel}`);
+                }
+            }
+
+            // 检查单个商品的状态
+            function checkSingleProductStatus(productRow, headers) {
+                const result = {
+                    productName: '未知商品',
+                    expireDate: null,
+                    isExpired: false,
+                    isSoonExpired: false,
+                    daysRemaining: null,
+                    stock: '未知'
+                };
+
+                // 提取商品名称（优先使用第一列或包含名称关键词的列）
+                for (let i = 0; i < productRow.length && i < headers.length; i++) {
+                    const header = headers[i] ? headers[i].toLowerCase() : '';
+                    if (i === 0 || header.includes('名称') || header.includes('产品') || header.includes('商品')) {
+                        if (productRow[i]) {
+                            result.productName = productRow[i].toString();
+                            break;
+                        }
+                    }
+                }
+
+                // 查找日期相关的列
+                const dateColumns = [];
+                headers.forEach((header, index) => {
+                    const headerLower = header ? header.toLowerCase() : '';
+                    if (headerLower.includes('过期') ||
+                        headerLower.includes('有效期') ||
+                        headerLower.includes('截止') ||
+                        headerLower.includes('到期') ||
+                        headerLower.includes('expire') ||
+                        headerLower.includes('有效期至') ||
+                        headerLower.includes('失效日期')) {
+                        dateColumns.push(index);
+                    }
+                });
+
+                // 检查是否过期
+                if (dateColumns.length > 0) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const thirtyDaysLater = new Date(today);
+                    thirtyDaysLater.setDate(today.getDate() + 30);
+
+                    for (const dateCol of dateColumns) {
+                        if (dateCol < productRow.length && productRow[dateCol]) {
+                            const expireDate = parseDateValue(productRow[dateCol]);
+                            if (expireDate) {
+                                result.expireDate = formatDate(expireDate);
+                                
+                                // 计算剩余天数
+                                const timeDiff = expireDate.getTime() - today.getTime();
+                                const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                                result.daysRemaining = daysRemaining;
+
+                                // 判断状态
+                                if (expireDate < today) {
+                                    result.isExpired = true;
+                                } else if (expireDate <= thirtyDaysLater) {
+                                    result.isSoonExpired = true;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // 查找库存相关的列
+                for (let i = 0; i < headers.length && i < productRow.length; i++) {
+                    const header = headers[i] ? headers[i].toLowerCase() : '';
+                    if (header.includes('库存') || header.includes('数量') || header.includes('stock') || header.includes('amount')) {
+                        if (productRow[i]) {
+                            result.stock = productRow[i].toString();
+                            break;
+                        }
+                    }
+                }
+                
+                return result;
+            }
+
+            // 格式化日期为YYYY-MM-DD
+            function formatDate(date) {
+                if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+                    return null;
+                }
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            
+            // 智能到期分析算法 - 核心智能算法
+            function intelligentExpirationAnalysis(productInfo) {
+                // 初始化结果
+                const result = {
+                    riskLevel: '低',
+                    priority: '低',
+                    recommendation: '常规管理',
+                    urgencyScore: 0
+                };
+                
+                // 1. 计算紧急度分数
+                let urgencyScore = 0;
+                
+                // 基础紧急度计算
+                if (productInfo.isExpired) {
+                    urgencyScore = 100; // 已过期商品最高优先级
+                } else if (productInfo.isSoonExpired && productInfo.daysRemaining !== null) {
+                    // 临期商品根据剩余天数计算紧急度 (剩余天数越少，紧急度越高)
+                    urgencyScore = 100 - (productInfo.daysRemaining * 3); // 30天=10分，0天=100分
+                    if (urgencyScore < 10) urgencyScore = 10; // 最低10分
+                } else {
+                    urgencyScore = 5; // 正常商品低紧急度
+                }
+                
+                // 2. 库存因子影响 - 库存越多，紧急度越高
+                const stockValue = parseInt(productInfo.stock);
+                if (!isNaN(stockValue)) {
+                    if (stockValue > 100) {
+                        urgencyScore += 20; // 高库存增加紧急度
+                    } else if (stockValue > 50) {
+                        urgencyScore += 10; // 中高库存增加一些紧急度
+                    }
+                }
+                
+                // 3. 智能风险评估
+                let riskLevel;
+                if (urgencyScore >= 80) {
+                    riskLevel = '极高';
+                } else if (urgencyScore >= 60) {
+                    riskLevel = '高';
+                } else if (urgencyScore >= 40) {
+                    riskLevel = '中';
+                } else if (urgencyScore >= 20) {
+                    riskLevel = '低';
+                } else {
+                    riskLevel = '极低';
+                }
+                
+                // 4. 优先级排序
+                let priority;
+                if (urgencyScore >= 90) {
+                    priority = '极高';
+                } else if (urgencyScore >= 70) {
+                    priority = '高';
+                } else if (urgencyScore >= 50) {
+                    priority = '中';
+                } else if (urgencyScore >= 30) {
+                    priority = '低';
+                } else {
+                    priority = '极低';
+                }
+                
+                // 5. 智能处理建议生成
+                let recommendation = '';
+                
+                if (productInfo.isExpired) {
+                    // 过期商品处理建议
+                    if (stockValue > 50) {
+                        recommendation = '立即组织下架并联系供应商协商退换';
+                    } else {
+                        recommendation = '立即下架并按规定销毁处理';
+                    }
+                } else if (productInfo.isSoonExpired) {
+                    // 临期商品智能处理建议
+                    const daysRemaining = productInfo.daysRemaining;
+                    
+                    if (daysRemaining <= 7) {
+                        // 7天内过期 - 紧急处理
+                        recommendation = '立即安排促销，建议折扣力度40-50%';
+                    } else if (daysRemaining <= 15) {
+                        // 15天内过期 - 重要处理
+                        recommendation = '安排促销活动，建议折扣力度20-30%';
+                    } else if (daysRemaining <= 30) {
+                        // 30天内过期 - 常规处理
+                        recommendation = '适当促销，建议优先陈列，考虑捆绑销售';
+                    }
+                    
+                    // 根据库存调整建议
+                    if (!isNaN(stockValue)) {
+                        if (stockValue > 100) {
+                            recommendation += '，库存量大，建议增加促销力度';
+                        } else if (stockValue > 50) {
+                            recommendation += '，库存较多，建议重点关注';
+                        }
+                    }
+                } else {
+                    // 正常商品建议
+                    recommendation = '常规库存管理，注意定期检查';
+                }
+                
+                // 6. 智能预警提示（针对正常但接近临期的商品）
+                if (!productInfo.isSoonExpired && productInfo.daysRemaining !== null) {
+                    if (productInfo.daysRemaining > 30 && productInfo.daysRemaining <= 60) {
+                        recommendation += '，注意：商品将在60天内到期，建议密切关注';
+                    }
+                }
+                
+                // 更新结果
+                result.riskLevel = riskLevel;
+                result.priority = priority;
+                result.recommendation = recommendation;
+                result.urgencyScore = urgencyScore;
+                
+                return result;
+            }
+            
+            // 商品过期模式分析 - 识别过期规律
+            function analyzeExpirationPatterns(allProducts) {
+                if (!allProducts || allProducts.length === 0) {
+                    return null;
+                }
+                
+                // 统计各类商品的过期情况
+                const categoryStats = {};
+                const monthStats = {};
+                
+                allProducts.forEach(product => {
+                    // 按类别统计（简化版，实际可以根据商品名称识别类别）
+                    const category = identifyProductCategory(product.productName || product.name);
+                    if (!categoryStats[category]) {
+                        categoryStats[category] = { total: 0, expired: 0, soonExpired: 0 };
+                    }
+                    categoryStats[category].total++;
+                    if (product.isExpired || (product.name && product.expireDate && new Date(product.expireDate) < new Date())) {
+                        categoryStats[category].expired++;
+                    } else if (product.isSoonExpired || (product.name && product.expireDate && product.daysRemaining <= 30)) {
+                        categoryStats[category].soonExpired++;
+                    }
+                    
+                    // 按月份统计过期商品
+                    if (product.expireDate) {
+                        const month = new Date(product.expireDate).getMonth();
+                        monthStats[month] = (monthStats[month] || 0) + 1;
+                    }
+                });
+                
+                // 计算风险类别
+                const highRiskCategories = [];
+                for (const [category, stats] of Object.entries(categoryStats)) {
+                    const riskRate = (stats.expired + stats.soonExpired) / stats.total;
+                    if (riskRate > 0.3) { // 超过30%的商品有过期风险
+                        highRiskCategories.push({
+                            category: category,
+                            riskRate: (riskRate * 100).toFixed(1) + '%',
+                            expiredCount: stats.expired,
+                            soonExpiredCount: stats.soonExpired,
+                            totalCount: stats.total
+                        });
+                    }
+                }
+                
+                // 识别高风险月份
+                const highRiskMonths = [];
+                const totalMonths = Object.values(monthStats).reduce((sum, count) => sum + count, 0);
+                const avgPerMonth = totalMonths / 12;
+                
+                for (const [month, count] of Object.entries(monthStats)) {
+                    if (count > avgPerMonth * 1.5) { // 超过平均值的1.5倍
+                        highRiskMonths.push({
+                            month: parseInt(month) + 1, // 转换为1-12的月份
+                            count: count,
+                            riskFactor: (count / avgPerMonth).toFixed(1)
+                        });
+                    }
+                }
+                
+                return {
+                    categoryStats: categoryStats,
+                    highRiskCategories: highRiskCategories,
+                    monthStats: monthStats,
+                    highRiskMonths: highRiskMonths,
+                    totalProducts: allProducts.length,
+                    totalExpired: Object.values(categoryStats).reduce((sum, stats) => sum + stats.expired, 0),
+                    totalSoonExpired: Object.values(categoryStats).reduce((sum, stats) => sum + stats.soonExpired, 0)
+                };
+            }
+            
+            // 智能商品类别识别
+            function identifyProductCategory(productName) {
+                if (!productName) return '其他';
+                
+                const name = productName.toLowerCase();
+                
+                // 常见商品类别关键词
+                const categories = {
+                    '食品': ['食品', '零食', '饮料', '面包', '饼干', '糖果', '巧克力', '牛奶', '酸奶'],
+                    '生鲜': ['生鲜', '蔬菜', '水果', '肉', '鱼', '蛋', '奶'],
+                    '日用品': ['日用品', '纸巾', '洗护', '清洁', '牙膏', '洗发水', '沐浴露'],
+                    '药品': ['药', '药品', '胶囊', '片剂', '冲剂', '药水'],
+                    '饮料': ['饮料', '可乐', '雪碧', '矿泉水', '果汁', '茶', '咖啡'],
+                    '零食': ['零食', '薯片', '饼干', '糖果', '坚果', '巧克力']
+                };
+                
+                // 匹配类别
+                for (const [category, keywords] of Object.entries(categories)) {
+                    for (const keyword of keywords) {
+                        if (name.includes(keyword)) {
+                            return category;
+                        }
+                    }
+                }
+                
+                return '其他';
+            }
+            
+            // 智能库存优化建议
+            function generateInventoryOptimizationSuggestions(expiredProducts, soonExpiredProducts) {
+                const suggestions = [];
+                
+                // 分析过期原因
+                if (expiredProducts.length > 5) {
+                    suggestions.push('警告：过期商品数量过多，建议优化采购策略，减少单次采购量');
+                }
+                
+                // 临期商品处理建议
+                if (soonExpiredProducts.length > 10) {
+                    suggestions.push('建议立即组织临期商品促销活动，降低库存风险');
+                }
+                
+                // 类别风险分析
+                const allProducts = [...expiredProducts, ...soonExpiredProducts];
+                const patterns = analyzeExpirationPatterns(allProducts);
+                
+                if (patterns && patterns.highRiskCategories.length > 0) {
+                    patterns.highRiskCategories.forEach(cat => {
+                        suggestions.push(`类别"${cat.category}"存在高过期风险(${cat.riskRate})，建议减少该类别商品库存`);
+                    });
+                }
+                
+                if (patterns && patterns.highRiskMonths.length > 0) {
+                    patterns.highRiskMonths.forEach(month => {
+                        suggestions.push(`月份${month.month}是过期风险高发期，建议提前调整采购计划`);
+                    });
+                }
+                
+                // 返回智能建议
+                return suggestions;
+            }
+            
+            // 智能生成过期商品分析报告
+            function generateExpirationAnalysisReport(expiredProducts, soonExpiredProducts) {
+                // 生成基础统计信息
+                const report = {
+                    totalExpired: expiredProducts.length,
+                    totalSoonExpired: soonExpiredProducts.length,
+                    totalRiskProducts: expiredProducts.length + soonExpiredProducts.length,
+                    highestRiskProducts: [],
+                    categoryAnalysis: {},
+                    optimizationSuggestions: [],
+                    summary: ''
+                };
+                
+                // 分析模式并生成建议
+                const patterns = analyzeExpirationPatterns([...expiredProducts, ...soonExpiredProducts]);
+                report.optimizationSuggestions = generateInventoryOptimizationSuggestions(expiredProducts, soonExpiredProducts);
+                
+                // 找出风险最高的商品（库存最多的过期商品和剩余天数最少的临期商品）
+                if (expiredProducts.length > 0) {
+                    // 按库存排序过期商品
+                    const sortedExpired = [...expiredProducts].sort((a, b) => {
+                        const stockA = parseInt(a.stock) || 0;
+                        const stockB = parseInt(b.stock) || 0;
+                        return stockB - stockA;
+                    });
+                    report.highestRiskProducts.push(...sortedExpired.slice(0, 3).map(p => ({...p, type: 'expired'})));
+                }
+                
+                if (soonExpiredProducts.length > 0) {
+                    // 按剩余天数排序临期商品
+                    const sortedSoonExpired = [...soonExpiredProducts].sort((a, b) => a.daysRemaining - b.daysRemaining);
+                    report.highestRiskProducts.push(...sortedSoonExpired.slice(0, 3).map(p => ({...p, type: 'soonExpired'})));
+                }
+                
+                // 生成总结
+                report.summary = `本次分析发现${report.totalRiskProducts}个高风险商品，其中${report.totalExpired}个已过期，${report.totalSoonExpired}个即将过期。`;
+                
+                if (patterns && patterns.highRiskCategories.length > 0) {
+                    report.summary += `发现${patterns.highRiskCategories.length}个高风险商品类别，`;
+                }
+                
+                return report;
+            }
+
+            // 事件监听器
+            startBtn.addEventListener('click', startScanner);
+            stopBtn.addEventListener('click', stopScanner);
+            switchCameraBtn.addEventListener('click', switchCamera);
+
+            // 初始检查摄像头权限
+            checkCameraPermission();
+
+            // ==================== Excel表格功能 ====================
+            const fileInput = document.getElementById('file-input');
+            const uploadBtn = document.getElementById('upload-btn');
+            const fileName = document.getElementById('file-name');
+            const sheetSelect = document.getElementById('sheet-select');
+            const tableHeader = document.getElementById('table-header');
+            const tableBody = document.getElementById('table-body');
+            const dropArea = document.getElementById('drop-area');
+            const loading = document.getElementById('loading');
+            const decodeStatus = document.getElementById('decode-status');
+            const voiceSelect = document.getElementById('voice-select');
+            //const globalFilter = document.getElementById('global-filter');
+            const applyFilter = document.getElementById('apply-filter');
+            const clearFilter = document.getElementById('clear-filter');
+            const toggleColumnsBtn = document.getElementById('toggle-columns-btn');
+            const columnVisibility = document.getElementById('column-visibility');
+            const columnCheckboxes = document.getElementById('column-checkboxes');
+
+            let currentWorkbook = null;
+            let currentSheetIndex = 0;
+            let currentData = [];
+            let filteredData = [];
+            let voices = [];
+            let columnVisibilityState = {};
+            let qrColumnIndex = -1;
+
+            // 初始化QR码库
+            qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+
+            // 初始化语音合成
+            function initSpeechSynthesis() {
+                // 获取可用的语音列表
+                function loadVoices() {
+                    voices = speechSynthesis.getVoices();
+                    voiceSelect.innerHTML = '';
+
+                    // 过滤中文语音
+                    const chineseVoices = voices.filter(voice => voice.lang.includes('zh'));
+
+                    if (chineseVoices.length > 0) {
+                        chineseVoices.forEach(voice => {
+                            const option = document.createElement('option');
+                            option.value = voice.name;
+                            option.textContent = `${voice.name} (${voice.lang})`;
+                            voiceSelect.appendChild(option);
+                        });
+                    } else {
+                        // 如果没有中文语音，显示所有可用语音
+                        voices.forEach(voice => {
+                            const option = document.createElement('option');
+                            option.value = voice.name;
+                            option.textContent = `${voice.name} (${voice.lang})`;
+                            voiceSelect.appendChild(option);
+                        });
+                    }
+                }
+
+                // 语音加载事件
+                if (speechSynthesis.onvoiceschanged !== undefined) {
+                    speechSynthesis.onvoiceschanged = loadVoices;
+                }
+
+                // 初始加载
+                loadVoices();
+            }
+
+            // 上传按钮点击事件
+            uploadBtn.addEventListener('click', function () {
+                fileInput.click();
+            });
+
+            // 文件选择变化事件
+            fileInput.addEventListener('change', function (e) {
+                if (e.target.files.length) {
+                    fileName.textContent = e.target.files[0].name;
+                    processExcelFile(e.target.files[0]);
+                }
+            });
+
+            // 拖放事件处理
+            dropArea.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                dropArea.style.background = '#e1f0ff';
+            });
+
+            dropArea.addEventListener('dragleave', function () {
+                dropArea.style.background = '#f8fafc';
+            });
+
+            dropArea.addEventListener('drop', function (e) {
+                e.preventDefault();
+                dropArea.style.background = '#f8fafc';
+
+                if (e.dataTransfer.files.length) {
+                    const file = e.dataTransfer.files[0];
+                    if (isExcelFile(file)) {
+                        fileName.textContent = file.name;
+                        processExcelFile(file);
+                    } else {
+                        alert('请上传Excel文件（.xlsx 或 .xls格式）');
+                    }
+                }
+            });
+
+            // 应用筛选按钮点击事件
+            applyFilter.addEventListener('click', function () {
+                applyGlobalFilter();
+            });
+
+            // 清除筛选按钮点击事件
+            clearFilter.addEventListener('click', function () {
+                globalFilter.value = '';
+                filteredData = [...currentData];
+                renderTable(filteredData);
+            });
+
+            // 显示/隐藏列按钮点击事件
+            toggleColumnsBtn.addEventListener('click', function () {
+                columnVisibility.style.display = columnVisibility.style.display === 'none' ? 'block' : 'none';
+            });
+
+            // 检查是否为Excel文件
+            function isExcelFile(file) {
+                return file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                    file.type === 'application/vnd.ms-excel' ||
+                    file.name.endsWith('.xlsx') ||
+                    file.name.endsWith('.xls');
+            }
+
+            // 处理Excel文件
+            function processExcelFile(file) {
+                loading.style.display = 'block';
+
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        currentWorkbook = XLSX.read(data, { type: 'array' });
+
+                        // 清空工作表选择下拉菜单
+                        sheetSelect.innerHTML = '';
+
+                        // 填充工作表选择下拉菜单
+                        currentWorkbook.SheetNames.forEach((sheetName, index) => {
+                            const option = document.createElement('option');
+                            option.value = index;
+                            option.textContent = sheetName;
+                            sheetSelect.appendChild(option);
+                        });
+
+                        // 显示第一个工作表
+                        displaySheet(currentWorkbook, 0);
+
+                        // 工作表选择变化事件
+                        sheetSelect.addEventListener('change', function () {
+                            currentSheetIndex = parseInt(this.value);
+                            displaySheet(currentWorkbook, currentSheetIndex);
+                        });
+
+                        loading.style.display = 'none';
+                    } catch (error) {
+                        console.error('Error processing Excel file:', error);
+                        alert('处理Excel文件时出错: ' + error.message);
+                        loading.style.display = 'none';
+                    }
+                };
+
+                reader.onerror = function () {
+                    alert('读取文件时发生错误');
+                    loading.style.display = 'none';
+                };
+
+                reader.readAsArrayBuffer(file);
+            }
+
+            // 生成条形码
+            function generateBarcode(text, cellElement) {
+                try {
+                    const typeNumber = 0; // 自动检测
+                    const errorCorrectionLevel = 'L';
+                    const qr = qrcode(typeNumber, errorCorrectionLevel);
+                    qr.addData(text);
+                    qr.make();
+
+                    const qrElement = document.createElement('div');
+                    qrElement.className = 'barcode';
+                    qrElement.innerHTML = qr.createSvgTag({
+                        scalable: true,
+                        margin: 0,
+                        color: {
+                            dark: "#000000",
+                            light: "#ffffff"
+                        }
+                    });
+
+                    // 设置SVG大小
+                    const svg = qrElement.querySelector('svg');
+                    svg.setAttribute('width', '80');
+                    svg.setAttribute('height', '80');
+
+                    // 添加点击事件监听器
+                    qrElement.addEventListener('click', function () {
+                        decodeAndSpeakBarcode(text, qrElement);
+                    });
+
+                    cellElement.appendChild(qrElement);
+                } catch (error) {
+                    console.error('生成条形码时出错:', error);
+                    cellElement.innerHTML = '<div class="barcode">条码生成失败</div>';
+                }
+            }
+
+            // 解码并朗读条形码内容
+            function decodeAndSpeakBarcode(content, element) {
+                // 显示解码中状态
+                showDecodeStatus('解码中...', '');
+
+                // 模拟解码过程（实际上我们已经有内容，不需要真正解码图像）
+                setTimeout(() => {
+                    try {
+                        // 显示解码成功状态
+                        showDecodeStatus('解码成功', 'success');
+
+                        // 朗读内容
+                        speakText(content);
+
+                        // 添加视觉反馈
+                        element.style.boxShadow = '0 0 0 3px #27ae60';
+                        setTimeout(() => {
+                            element.style.boxShadow = '';
+                        }, 1000);
+                    } catch (error) {
+                        console.error('解码或朗读出错:', error);
+                        showDecodeStatus('解码失败: ' + error.message, 'error');
+                    }
+                }, 300);
+            }
+
+            // 显示解码状态
+            function showDecodeStatus(message, type) {
+                decodeStatus.textContent = message;
+                decodeStatus.className = 'decode-status';
+
+                if (type) {
+                    decodeStatus.classList.add(type);
+                }
+
+                decodeStatus.classList.add('show');
+
+                // 3秒后隐藏状态
+                setTimeout(() => {
+                    decodeStatus.classList.remove('show');
+                }, 3000);
+            }
+
+            // 语音朗读功能
+            function speakText(text) {
+                if ('speechSynthesis' in window) {
+                    // 停止任何正在进行的语音
+                    window.speechSynthesis.cancel();
+
+                    // 创建语音实例
+                    const utterance = new SpeechSynthesisUtterance(text);
+
+                    // 设置语言
+                    utterance.lang = 'zh-CN';
+
+                    // 设置语速
+                    utterance.rate = 0.9;
+
+                    // 设置音调
+                    utterance.pitch = 1.0;
+
+                    // 设置音量
+                    utterance.volume = 1.0;
+
+                    // 如果选择了特定语音，使用该语音
+                    if (voiceSelect.value) {
+                        const selectedVoice = voices.find(voice => voice.name === voiceSelect.value);
+                        if (selectedVoice) {
+                            utterance.voice = selectedVoice;
+                        }
+                    }
+
+                    // 朗读文本
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    showDecodeStatus('您的浏览器不支持语音合成功能', 'error');
+                }
+            }
+
+            // 检查库存数量少于10个的商品
+            function checkLowStockProducts(data, headers) {
+                console.log('开始检查低库存商品');
+                console.log('表头信息:', headers);
+
+                // 查找库存相关的列
+                const stockColumns = [];
+                // 查找批次相关的列
+                const batchColumns = [];
+                
+                headers.forEach((header, index) => {
+                    const headerLower = header ? header.toLowerCase() : '';
+                    // 检查库存列
+                    if (headerLower.includes('库存') ||
+                        headerLower.includes('数量') ||
+                        headerLower.includes('stock') ||
+                        headerLower.includes('quantity') ||
+                        headerLower.includes('count')) {
+                        stockColumns.push(index);
+                        console.log(`找到库存列: ${header} (索引: ${index})`);
+                    }
+                    // 检查批次列
+                    if (headerLower.includes('批次') ||
+                        headerLower.includes('batch') ||
+                        headerLower.includes('lot') ||
+                        headerLower.includes('批次号') ||
+                        headerLower.includes('lot no')) {
+                        batchColumns.push(index);
+                        console.log(`找到批次列: ${header} (索引: ${index})`);
+                    }
+                });
+
+                if (stockColumns.length === 0) {
+                    console.log('未检测到任何库存列');
+                    return { lowStockCount: 0, lowStockProducts: [] };
+                }
+
+                const lowStockThreshold = 10;
+                let lowStockCount = 0;
+                const lowStockProducts = [];
+
+                data.forEach((row, rowIndex) => {
+                    // 跳过空行
+                    if (!row || row.length === 0 || !row.some(cell => cell !== null && cell !== undefined && cell !== '')) {
+                        return;
+                    }
+
+                    let isLowStock = false;
+                    let stockValue = null;
+
+                    stockColumns.forEach(colIndex => {
+                        const cellValue = row[colIndex];
+                        const numValue = parseFloat(cellValue);
+
+                        if (!isNaN(numValue) && numValue < lowStockThreshold) {
+                            isLowStock = true;
+                            stockValue = numValue;
+                        }
+                    });
+
+                    // 智能提取商品名称
+                    let productName = '未命名商品';
+                    // 首先尝试第一列
+                    if (row[0] && row[0].toString().trim()) {
+                        productName = row[0].toString().trim();
+                    } else {
+                        // 如果第一列为空，尝试查找包含"名称"、"商品"等关键词的列
+                        headers.forEach((header, index) => {
+                            const headerLower = header ? header.toLowerCase() : '';
+                            if ((headerLower.includes('名称') || 
+                                 headerLower.includes('商品') || 
+                                 headerLower.includes('product') || 
+                                 headerLower.includes('name')) && 
+                                row[index] && row[index].toString().trim()) {
+                                productName = row[index].toString().trim();
+                            }
+                        });
+                    }
+
+                    // 提取批次信息
+                    let batchInfo = '未知批次';
+                    if (batchColumns.length > 0) {
+                        // 尝试从第一个批次列获取信息
+                        const batchIndex = batchColumns[0];
+                        if (row[batchIndex] && row[batchIndex].toString().trim()) {
+                            batchInfo = row[batchIndex].toString().trim();
+                        }
+                    }
+
+                    if (isLowStock) {
+                        lowStockCount++;
+                        console.log(`找到低库存商品 (行${rowIndex + 2}): ${productName}, 当前库存: ${stockValue}, 批次: ${batchInfo}`);
+                        
+                        // 记录低库存商品详细信息
+                        lowStockProducts.push({
+                            name: productName,
+                            stock: stockValue,
+                            row: rowIndex + 2,
+                            batch: batchInfo
+                        });
+                    }
+                });
+
+                console.log(`库存检查结果: 共找到${lowStockCount}个低库存商品`);
+                console.log('低库存商品详情:', lowStockProducts);
+
+                return {
+                    lowStockCount: lowStockCount,
+                    lowStockProducts: lowStockProducts
+                };
+            }
+
+            // 显示低库存商品提示弹窗
+            // 自定义HTML弹窗函数，支持样式设置和回调
+            function showCustomAlert(title, content, onConfirm = null, icon = '') {
+                // 创建遮罩层
+                const overlay = document.createElement('div');
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 9999;
+                `;
+                
+                // 创建弹窗容器
+                const alertBox = document.createElement('div');
+                alertBox.style.cssText = `
+                    background-color: white;
+                    border-radius: 8px;
+                    width: 90%;
+                    max-width: 450px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    overflow: hidden;
+                `;
+                
+                // 创建标题栏
+                const headerElement = document.createElement('div');
+                headerElement.style.cssText = `
+                    background-color: white;
+                    padding: 15px 20px;
+                    border-bottom: 1px solid #f0f0f0;
+                `;
+                
+                // 创建标题
+                const titleElement = document.createElement('h3');
+                titleElement.style.cssText = `
+                    text-align: center;
+                    margin: 0;
+                    color: #ff0000;
+                    font-size: 18px;
+                    font-weight: bold;
+                `;
+                
+                // 添加警告图标和标题文本
+                if (icon === 'warning' || content.includes('警告') || content.includes('过期') || content.includes('临期') || content.includes('库存')) {
+                    titleElement.innerHTML = '⚠️ ' + title + ' ⚠️';
+                } else {
+                    titleElement.textContent = title;
+                }
+                
+                headerElement.appendChild(titleElement);
+                
+                // 创建内容区域
+                const contentElement = document.createElement('div');
+                contentElement.innerHTML = content.replace(/\n/g, '<br>');
+                contentElement.style.cssText = `
+                    padding: 20px;
+                    line-height: 1.8;
+                    color: #333;
+                    font-size: 15px;
+                `;
+                
+                // 创建确认按钮
+                const confirmButton = document.createElement('button');
+                confirmButton.textContent = '确定';
+                confirmButton.style.cssText = `
+                    background-color: #0066ff;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    width: 100%;
+                    border-radius: 0;
+                    font-weight: 500;
+                    transition: background-color 0.3s;
+                `;
+                
+                // 悬停效果
+                confirmButton.onmouseenter = function() {
+                    this.style.backgroundColor = '#0052cc';
+                };
+                confirmButton.onmouseleave = function() {
+                    this.style.backgroundColor = '#0066ff';
+                };
+                
+                confirmButton.onclick = function() {
+                    document.body.removeChild(overlay);
+                    // 执行回调函数
+                    if (typeof onConfirm === 'function') {
+                        onConfirm();
+                    }
+                };
+                
+                // 组装弹窗
+                alertBox.appendChild(headerElement);
+                alertBox.appendChild(contentElement);
+                alertBox.appendChild(confirmButton);
+                overlay.appendChild(alertBox);
+                document.body.appendChild(overlay);
+            }
+            
+            function showLowStockAlert(lowStockCount, lowStockProducts) {
+                // 先显示总体统计信息
+                if (lowStockCount > 0) {
+                    let content = `发现 ${lowStockCount} 个低库存商品！<br>库存少于10个请及时补货`;
+                    showCustomAlert('鹰眼系统提示您', content);
+                    
+                    // 逐一显示低库存商品详情（用户确认后显示下一个）
+                    console.log('开始显示低库存商品提示');
+                    let currentIndex = 0;
+                    
+                    function showNextLowStockProduct() {
+                        if (currentIndex < lowStockProducts.length) {
+                            const product = lowStockProducts[currentIndex];
+                            let content = `<strong>⚠️ 库存预警 ⚠️</strong><br><br>商品条码: ${product.name}<br>当前库存: ${product.stock}<br>所在行: ${product.row}<br>批次: ${product.batch}<br><br>库存少于10个请及时补货！`;
+                            
+                            showCustomAlert('鹰眼系统提示您', content, function() {
+                                currentIndex++;
+                                showNextLowStockProduct();
+                            });
+                        }
+                    }
+                    
+                    // 显示第一个低库存商品
+                    if (lowStockProducts.length > 0) {
+                        // 等待总体统计信息弹窗关闭后再开始显示详情
+                        setTimeout(showNextLowStockProduct, 100);
+                    }
+                }
+            }
+
+            // 智能检查商品过期情况
+            function checkExpiredProducts(data, headers) {
+                console.log('开始检查过期商品');
+                console.log('表头信息:', headers);
+
+                // 查找日期相关的列 - 增强关键词匹配
+                const dateColumns = [];
+                // 查找批次相关的列
+                const batchColumns = [];
+                // 查找库存相关的列
+                const stockColumns = [];
+                
+                headers.forEach((header, index) => {
+                    const headerLower = header ? header.toLowerCase() : '';
+                    // 检测日期列
+                    if (headerLower.includes('过期') ||
+                        headerLower.includes('有效期') ||
+                        headerLower.includes('截止') ||
+                        headerLower.includes('到期') ||
+                        headerLower.includes('expire') ||
+                        headerLower.includes('有效期至') ||
+                        headerLower.includes('失效日期') ||
+                        headerLower.includes('use by') ||
+                        headerLower.includes('best before')) {
+                        dateColumns.push(index);
+                        console.log(`找到日期列: ${header} (索引: ${index})`);
+                    }
+                    
+                    // 检测批次列
+                    if (headerLower.includes('批次') ||
+                        headerLower.includes('batch') ||
+                        headerLower.includes('lot') ||
+                        headerLower.includes('批') ||
+                        headerLower.includes('批次号') ||
+                        headerLower.includes('batch no')) {
+                        batchColumns.push(index);
+                        console.log(`找到批次列: ${header} (索引: ${index})`);
+                    }
+                    
+                    // 检测库存列
+                    if (headerLower.includes('库存') ||
+                        headerLower.includes('数量') ||
+                        headerLower.includes('stock') ||
+                        headerLower.includes('数量') ||
+                        headerLower.includes('count') ||
+                        headerLower.includes('num')) {
+                        stockColumns.push(index);
+                        console.log(`找到库存列: ${header} (索引: ${index})`);
+                    }
+                });
+
+                // 如果没有找到日期列，尝试所有列进行日期检测
+                if (dateColumns.length === 0) {
+                    console.log('未找到明显的日期列，尝试检测所有列中的日期格式');
+                    // 先检查一部分数据行来识别可能的日期列
+                    const sampleRows = data.slice(0, Math.min(10, data.length)); // 检查前10行
+
+                    sampleRows.forEach(row => {
+                        row.forEach((cell, index) => {
+                            if (!dateColumns.includes(index) && isDateValue(cell)) {
+                                dateColumns.push(index);
+                                console.log(`自动检测到日期列 (索引: ${index})`);
+                            }
+                        });
+                    });
+                }
+
+                if (dateColumns.length === 0) {
+                    console.log('未检测到任何日期列');
+                    return { expiredCount: 0, soonExpiredCount: 0, expiredProducts: [] };
+                }
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                console.log('当前日期:', today.toISOString().split('T')[0]);
+
+                // 计算30天后的日期，用于判断即将过期
+                const thirtyDaysLater = new Date(today);
+                thirtyDaysLater.setDate(today.getDate() + 30);
+                console.log('30天后日期:', thirtyDaysLater.toISOString().split('T')[0]);
+
+                // 使用计数器替代Set，避免因商品标识问题导致的计数错误
+                let expiredCount = 0;
+                let soonExpiredCount = 0;
+                let totalChecked = 0;
+                
+                // 新增：收集过期商品和临期商品的详细信息
+                const expiredProducts = [];
+                const soonExpiredProducts = [];
+
+                data.forEach((row, rowIndex) => {
+                    // 跳过空行
+                    if (!row || row.length === 0 || !row.some(cell => cell !== null && cell !== undefined && cell !== '')) {
+                        return;
+                    }
+
+                    totalChecked++;
+                    let isExpired = false;
+                    let isSoonExpired = false;
+                    let productDate = null;
+
+                    dateColumns.forEach(colIndex => {
+                        const cellValue = row[colIndex];
+                        let expireDate = parseDateValue(cellValue);
+
+                        if (expireDate) {
+                            // 记录找到的第一个有效日期
+                            if (!productDate) {
+                                productDate = expireDate;
+                            }
+
+                            // 判断是否过期
+                            if (expireDate < today) {
+                                isExpired = true;
+                            } else if (expireDate <= thirtyDaysLater) {
+                                isSoonExpired = true;
+                            }
+                        }
+                    });
+
+                    // 智能提取商品名称 - 尝试多个可能的列
+                    let productName = '未命名商品';
+                    // 首先尝试第一列
+                    if (row[0] && row[0].toString().trim()) {
+                        productName = row[0].toString().trim();
+                    } else {
+                        // 如果第一列为空，尝试查找包含"名称"、"商品"等关键词的列
+                        headers.forEach((header, index) => {
+                            const headerLower = header ? header.toLowerCase() : '';
+                            if ((headerLower.includes('名称') || 
+                                 headerLower.includes('商品') || 
+                                 headerLower.includes('product') || 
+                                 headerLower.includes('name')) && 
+                                row[index] && row[index].toString().trim()) {
+                                productName = row[index].toString().trim();
+                            }
+                        });
+                    }
+
+                    // 提取批次信息
+                    let batchInfo = '未知批次';
+                    if (batchColumns.length > 0) {
+                        for (const batchIndex of batchColumns) {
+                            if (row[batchIndex] && row[batchIndex].toString().trim()) {
+                                batchInfo = row[batchIndex].toString().trim();
+                                break; // 取第一个有效的批次信息
+                            }
+                        }
+                    }
+                    
+                    // 提取库存数量
+                    let stockInfo = '未知库存';
+                    if (stockColumns.length > 0) {
+                        for (const stockIndex of stockColumns) {
+                            if (row[stockIndex] !== null && row[stockIndex] !== undefined) {
+                                // 尝试转换为数字
+                                const stockNum = Number(row[stockIndex]);
+                                if (!isNaN(stockNum)) {
+                                    stockInfo = stockNum.toString();
+                                    break;
+                                } else if (row[stockIndex].toString().trim()) {
+                                    stockInfo = row[stockIndex].toString().trim();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (isExpired) {
+                        expiredCount++;
+                        const expireDateStr = productDate ? productDate.toISOString().split('T')[0] : '未知';
+                        console.log(`找到过期商品 (行${rowIndex + 2}): ${productName}, 过期日期: ${expireDateStr}, 批次: ${batchInfo}, 库存: ${stockInfo}`);
+                        
+                        // 新增：记录过期商品详细信息
+                        expiredProducts.push({
+                            name: productName,
+                            expireDate: expireDateStr,
+                            row: rowIndex + 2, // 行号（+2是因为数据从第2行开始，且数组索引从0开始）
+                            batch: batchInfo,
+                            stock: stockInfo
+                        });
+                    } else if (isSoonExpired) {
+                        soonExpiredCount++;
+                        const expireDateStr = productDate ? productDate.toISOString().split('T')[0] : '未知';
+                        // 计算剩余天数
+                        const daysRemaining = Math.ceil((productDate - today) / (1000 * 60 * 60 * 24));
+                        console.log(`找到即将过期商品 (行${rowIndex + 2}): ${productName}, 过期日期: ${expireDateStr}, 剩余${daysRemaining}天, 批次: ${batchInfo}, 库存: ${stockInfo}`);
+                        
+                        // 新增：记录临期商品详细信息
+                        soonExpiredProducts.push({
+                            name: productName,
+                            expireDate: expireDateStr,
+                            row: rowIndex + 2,
+                            daysRemaining: daysRemaining,
+                            batch: batchInfo,
+                            stock: stockInfo
+                        });
+                    }
+                });
+
+                console.log(`商品检查结果: 共检查${totalChecked}个商品, ${expiredCount}个已过期, ${soonExpiredCount}个即将过期`);
+                console.log('过期商品详情:', expiredProducts);
+                console.log('临期商品详情:', soonExpiredProducts);
+                
+                // 生成智能分析报告
+                const analysisReport = generateExpirationAnalysisReport(expiredProducts, soonExpiredProducts);
+                console.log('智能分析报告:', analysisReport);
+
+                return {
+                    expiredCount: expiredCount,
+                    soonExpiredCount: soonExpiredCount,
+                    expiredProducts: expiredProducts,
+                    soonExpiredProducts: soonExpiredProducts,
+                    totalChecked: totalChecked,
+                    analysisReport: analysisReport // 新增：返回智能分析报告
+                };
+            }
+
+            // 判断是否为日期值
+            function isDateValue(value) {
+                if (value === null || value === undefined || value === '') return false;
+
+                // Excel数字日期格式判断
+                if (typeof value === 'number' && value > 25569) {
+                    return true;
+                }
+
+                // 字符串日期格式判断
+                if (typeof value === 'string') {
+                    // 常见日期格式正则
+                    const dateRegexes = [
+                        /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/, // YYYY-MM-DD or YYYY/MM/DD
+                        /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/, // DD-MM-YYYY or DD/MM/YYYY
+                        /^\d{4}年\d{1,2}月\d{1,2}日$/,        // YYYY年MM月DD日
+                        /^\d{2}\.\d{2}\.\d{4}$/,            // DD.MM.YYYY
+                        /^\d{4}\.\d{2}\.\d{2}$/             // YYYY.MM.DD
+                    ];
+
+                    for (const regex of dateRegexes) {
+                        if (regex.test(value.trim())) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            // 解析各种日期格式
+            function parseDateValue(value) {
+                if (value === null || value === undefined || value === '') return null;
+
+                let date;
+
+                // 处理Excel数字日期格式
+                if (typeof value === 'number' && value > 25569) {
+                    // 注意：Excel的日期从1900-01-01开始，但它错误地认为1900年是闰年
+                    // 因此需要处理这个差异
+                    const excelDate = value < 60 ? value : value + 1; // 处理1900年闰年问题
+                    date = new Date((excelDate - 25569) * 86400000);
+                }
+                // 处理字符串日期
+                else if (typeof value === 'string') {
+                    const trimmedValue = value.trim();
+
+                    // 尝试直接解析
+                    date = new Date(trimmedValue);
+
+                    // 如果解析失败，尝试其他格式
+                    if (isNaN(date.getTime())) {
+                        // 尝试处理中文日期格式 YYYY年MM月DD日
+                        if (trimmedValue.includes('年') && trimmedValue.includes('月') && trimmedValue.includes('日')) {
+                            const year = parseInt(trimmedValue.match(/(\d{4})年/)[1]);
+                            const month = parseInt(trimmedValue.match(/(\d{1,2})月/)[1]) - 1;
+                            const day = parseInt(trimmedValue.match(/(\d{1,2})日/)[1]);
+                            date = new Date(year, month, day);
+                        }
+                        // 尝试处理其他分隔符格式
+                        else {
+                            // 替换各种分隔符为'/'以便统一解析
+                            const normalizedDate = trimmedValue.replace(/[\-\.\/]/g, '/');
+                            date = new Date(normalizedDate);
+                        }
+                    }
+                }
+
+                // 验证日期是否有效
+                if (date && !isNaN(date.getTime())) {
+                    // 标准化日期（清除时间部分）
+                    date.setHours(0, 0, 0, 0);
+                    return date;
+                }
+
+                return null;
+            }
+
+            // 显示过期商品和临期商品提示弹窗
+            function showExpirationAlert(expiredCount, soonExpiredCount, expiredProducts, soonExpiredProducts) {
+                // 先显示总体统计信息
+                if (expiredCount === 0 && soonExpiredCount === 0) {
+                    showCustomAlert('鹰眼系统提示您', '所有商品均在有效期内！');
+                } else {
+                    let content = '';
+                    if (expiredCount > 0) {
+                        content += `有 ${expiredCount} 种商品已过期！<br>`;
+                    }
+                    if (soonExpiredCount > 0) {
+                        content += `有 ${soonExpiredCount} 种商品即将在30天内过期！`;
+                    }
+                    showCustomAlert('鹰眼系统提示您', content);
+                }
+                
+                // 针对临期商品显示提示
+                if (soonExpiredProducts && soonExpiredProducts.length > 0) {
+                    console.log('开始显示临期商品提示');
+                    
+                    // 逐一显示临期商品（用户确认后显示下一个）
+                    let soonExpiredIndex = 0;
+                    
+                    function showNextSoonExpiredProduct() {
+                        if (soonExpiredIndex < soonExpiredProducts.length) {
+                            const product = soonExpiredProducts[soonExpiredIndex];
+                            let content = `<strong>⚠️ 商品临期提醒 ⚠️</strong><br><br>商品条码: ${product.name}<br>过期日期: ${product.expireDate}<br>所在行: ${product.row}<br>剩余天数: ${product.daysRemaining}天<br>批次: ${product.batch}<br>当前库存: ${product.stock}<br><br>请及时申请营销政策`;
+                            
+                            showCustomAlert('鹰眼系统提示您', content, function() {
+                                soonExpiredIndex++;
+                                showNextSoonExpiredProduct();
+                            });
+                        }
+                    }
+                    
+                    // 显示第一个临期商品
+                    if (soonExpiredProducts.length > 0) {
+                        // 等待总体统计信息弹窗关闭后再开始显示详情
+                        setTimeout(showNextSoonExpiredProduct, 100);
+                    }
+                }
+                
+                // 然后针对每个过期商品显示立即下架提示
+                if (expiredProducts && expiredProducts.length > 0) {
+                    console.log('开始显示过期商品下架提示');
+                    
+                    // 逐一显示过期商品（用户确认后显示下一个）
+                    let expiredIndex = 0;
+                    
+                    function showNextExpiredProduct() {
+                        if (expiredIndex < expiredProducts.length) {
+                            const product = expiredProducts[expiredIndex];
+                            let content = `<strong>⚠️ 商品过期警告 ⚠️</strong><br><br>商品条码: ${product.name}<br>过期日期: ${product.expireDate}<br>所在行: ${product.row}<br>批次: ${product.batch}<br>当前库存: ${product.stock}<br><br>请立即下架此商品！`;
+                            
+                            showCustomAlert('鹰眼系统提示您', content, function() {
+                                expiredIndex++;
+                                showNextExpiredProduct();
+                            });
+                        }
+                    }
+                    
+                    // 显示第一个过期商品
+                    if (expiredProducts.length > 0) {
+                        // 等待总体统计信息弹窗关闭后再开始显示详情
+                        setTimeout(showNextExpiredProduct, 100);
+                    }
+                }
+            }
+
+            // 显示工作表内容
+            function displaySheet(workbook, sheetIndex) {
+                const worksheet = workbook.Sheets[workbook.SheetNames[sheetIndex]];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                // 清空表格
+                tableHeader.innerHTML = '';
+                tableBody.innerHTML = '';
+                columnCheckboxes.innerHTML = '';
+                columnVisibilityState = {};
+
+                if (jsonData.length <= 1) {
+                    const tr = document.createElement('tr');
+                    const td = document.createElement('td');
+                    td.colSpan = 13;
+                    td.textContent = '没有找到数据或工作表为空';
+                    td.style.textAlign = 'center';
+                    td.style.padding = '20px';
+                    td.style.color = '#7f8c8d';
+                    tr.appendChild(td);
+                    // 检查是否为过期商品行，如果是则添加红色样式
+                    if (expiredRows.includes(i)) {
+                        tr.style.color = 'red';
+                        tr.style.fontWeight = 'bold';
+                    } 
+                    // 检查是否为临期商品行，如果是则添加橙色样式和剩余天数提示
+                    else {
+                        const soonExpiredItem = soonExpiredRows.find(item => item.row === i);
+                        if (soonExpiredItem) {
+                            tr.style.color = 'orange';
+                            
+                            // 添加一个剩余天数提示的单元格
+                            const daysCell = document.createElement('td');
+                            daysCell.textContent = `剩余${soonExpiredItem.days}天`;
+                            daysCell.style.fontWeight = 'bold';
+                            daysCell.style.backgroundColor = '#fff3cd';
+                            daysCell.style.padding = '5px 10px';
+                            daysCell.style.borderRadius = '4px';
+                            tr.appendChild(daysCell);
+                        }
+                    }
+                    
+                    tableBody.appendChild(tr);
+                    return;
+                }
+
+                // 获取表头
+                const headers = jsonData[0];
+
+                // 查找QR列准备的索引
+                qrColumnIndex = headers.findIndex(header => header === 'QR列准备');
+
+                // 创建表头行
+                const headerRow = document.createElement('tr');
+
+                headers.forEach((header, index) => {
+                    const th = document.createElement('th');
+                    th.textContent = header;
+                    th.setAttribute('data-column', index);
+
+                    // 添加排序图标
+                    const sortIcon = document.createElement('span');
+                    sortIcon.className = 'sort-icon';
+                    sortIcon.textContent = '↕';
+                    th.appendChild(sortIcon);
+
+                    // 添加列显示/隐藏切换
+                    const toggleBtn = document.createElement('span');
+                    toggleBtn.className = 'column-toggle';
+                    toggleBtn.textContent = '⊙';
+                    toggleBtn.title = '点击显示/隐藏此列';
+                    toggleBtn.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        toggleColumnVisibility(index);
+                    });
+                    th.appendChild(toggleBtn);
+
+                    // 添加排序功能
+                    th.addEventListener('click', function () {
+                        sortTable(index);
+                    });
+
+                    headerRow.appendChild(th);
+
+                    // 初始化列可见性状态
+                    columnVisibilityState[index] = true;
+
+                    // 添加列显示复选框
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'column-checkbox';
+
+                    const input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.id = `col-${index}`;
+                    input.checked = true;
+                    input.addEventListener('change', function () {
+                        toggleColumnVisibility(index);
+                    });
+
+                    const label = document.createElement('label');
+                    label.htmlFor = `col-${index}`;
+                    label.textContent = header;
+
+                    checkbox.appendChild(input);
+                    checkbox.appendChild(label);
+                    columnCheckboxes.appendChild(checkbox);
+                });
+
+                // 添加条形码列的表头
+                if (qrColumnIndex !== -1) {
+                    const qrTh = document.createElement('th');
+                    qrTh.textContent = '条形码';
+                    headerRow.appendChild(qrTh);
+                }
+
+                tableHeader.appendChild(headerRow);
+
+                // 提取数据
+                currentData = [];
+                for (let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    if (row && row.length > 0) {
+                        currentData.push(row);
+                    }
+                }
+
+                filteredData = [...currentData];
+
+                // 检查过期商品并显示提示
+                let expiredRows = [];
+                let soonExpiredRows = [];
+                if (currentData.length > 0) {
+                    const { expiredCount, soonExpiredCount, expiredProducts, soonExpiredProducts, analysisReport } = checkExpiredProducts(currentData, headers);
+                    // 存储过期商品和临期商品的行号（注意：这里的行号是相对于currentData的索引）
+                    expiredRows = expiredProducts.map(p => p.row - 2); // 减去2是因为product.row包含了表头的偏移
+                    soonExpiredRows = soonExpiredProducts.map(p => ({ row: p.row - 2, days: p.daysRemaining }));
+                    
+                    // 检查低库存商品
+                    const { lowStockCount, lowStockProducts } = checkLowStockProducts(currentData, headers);
+                    
+                    // 移除原始的弹窗调用，改为先显示汇总弹窗
+                    // 使用setTimeout确保表格渲染完成后再显示弹窗
+                    setTimeout(() => {
+                        // 创建汇总弹窗内容，包含所有三类警告信息
+                        let summaryContent = '';
+                        if (expiredCount > 0) {
+                            summaryContent += `有 ${expiredCount} 种商品已过期！<br>`;
+                        }
+                        if (soonExpiredCount > 0) {
+                            summaryContent += `有 ${soonExpiredCount} 种商品即将在30天内过期！<br>`;
+                        }
+                        if (lowStockCount > 0) {
+                            summaryContent += `有 ${lowStockCount} 种商品库存数量不足十个！`;
+                        }
+                        
+                        // 只有存在警告时才显示汇总弹窗
+                        if (summaryContent) {
+                            // 添加智能分析结果到汇总弹窗
+                            if (analysisReport) {
+                                summaryContent += '<br><br><strong>📊 智能分析结果：</strong><br>';
+                                summaryContent += analysisReport.summary + '<br>';
+                                
+                                // 添加优化建议
+                                if (analysisReport.optimizationSuggestions && analysisReport.optimizationSuggestions.length > 0) {
+                                    summaryContent += '<br><strong>💡 优化建议：</strong><br>';
+                                    analysisReport.optimizationSuggestions.slice(0, 3).forEach((suggestion, index) => {
+                                        summaryContent += `${index + 1}. ${suggestion}<br>`;
+                                    });
+                                }
+                                
+                                // 显示风险最高的商品
+                                if (analysisReport.highestRiskProducts && analysisReport.highestRiskProducts.length > 0) {
+                                    summaryContent += '<br><strong>⚠️ 高风险商品：</strong><br>';
+                                    analysisReport.highestRiskProducts.slice(0, 3).forEach(product => {
+                                        const typeText = product.type === 'expired' ? '【已过期】' : '【即将过期】';
+                                        summaryContent += `${typeText} ${product.name || '未知商品'} (库存: ${product.stock || 0})<br>`;
+                                    });
+                                }
+                            }
+                            
+                            showCustomAlert('鹰眼系统-智能分析报告', summaryContent, function() {
+                                // 汇总弹窗确认后，按顺序显示详细信息
+                                
+                                // 首先显示过期商品详细信息
+                                if (expiredProducts && expiredProducts.length > 0) {
+                                    console.log('开始显示过期商品详细信息');
+                                    let expiredIndex = 0;
+                                    
+                                    function showNextExpiredProduct() {
+                                        if (expiredIndex < expiredProducts.length) {
+                                            const product = expiredProducts[expiredIndex];
+                                            let content = `<strong>⚠️ 商品过期警告 ⚠️</strong><br><br>商品条码: ${product.name}<br>过期日期: ${product.expireDate}<br>所在行: ${product.row}<br>批次: ${product.batch}<br>当前库存: ${product.stock}<br><br>请立即下架此商品！`;
+                                            
+                                            showCustomAlert('鹰眼系统提示您', content, function() {
+                                                expiredIndex++;
+                                                showNextExpiredProduct();
+                                            });
+                                        } else {
+                                            // 过期商品显示完毕后，显示临期商品详细信息
+                                            if (soonExpiredProducts && soonExpiredProducts.length > 0) {
+                                                setTimeout(() => {
+                                                    console.log('开始显示临期商品详细信息');
+                                                    let soonExpiredIndex = 0;
+                                                    
+                                                    function showNextSoonExpiredProduct() {
+                                                        if (soonExpiredIndex < soonExpiredProducts.length) {
+                                                            const product = soonExpiredProducts[soonExpiredIndex];
+                                                            let content = `<strong>⚠️ 商品临期提醒 ⚠️</strong><br><br>商品条码: ${product.name}<br>过期日期: ${product.expireDate}<br>所在行: ${product.row}<br>剩余天数: ${product.daysRemaining}天<br>批次: ${product.batch}<br>当前库存: ${product.stock}<br><br>请及时申请营销政策`;
+                                                            
+                                                            showCustomAlert('鹰眼系统提示您', content, function() {
+                                                                soonExpiredIndex++;
+                                                                showNextSoonExpiredProduct();
+                                                            });
+                                                        } else {
+                                                            // 临期商品显示完毕后，显示库存不足商品详细信息
+                                                            if (lowStockProducts && lowStockProducts.length > 0) {
+                                                                setTimeout(() => {
+                                                                    console.log('开始显示库存不足商品详细信息');
+                                                                    let lowStockIndex = 0;
+                                                                    
+                                                                    function showNextLowStockProduct() {
+                                                                        if (lowStockIndex < lowStockProducts.length) {
+                                                                            const product = lowStockProducts[lowStockIndex];
+                                                                            let content = `<strong>⚠️ 库存预警 ⚠️</strong><br><br>商品条码: ${product.name}<br>当前库存: ${product.stock}<br>所在行: ${product.row}<br>批次: ${product.batch}<br><br>库存少于10个请及时补货！`;
+                                                                            
+                                                                            showCustomAlert('鹰眼系统提示您', content, function() {
+                                                                                lowStockIndex++;
+                                                                                showNextLowStockProduct();
+                                                                            });
+                                                                        }
+                                                                    }
+                                                                    
+                                                                    // 显示第一个库存不足商品
+                                                                    showNextLowStockProduct();
+                                                                }, 300);
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    // 显示第一个临期商品
+                                                    showNextSoonExpiredProduct();
+                                                }, 300);
+                                            } else {
+                                                // 如果没有临期商品，直接显示库存不足商品详细信息
+                                                if (lowStockProducts && lowStockProducts.length > 0) {
+                                                    setTimeout(() => {
+                                                        console.log('开始显示库存不足商品详细信息');
+                                                        let lowStockIndex = 0;
+                                                        
+                                                        function showNextLowStockProduct() {
+                                                            if (lowStockIndex < lowStockProducts.length) {
+                                                                const product = lowStockProducts[lowStockIndex];
+                                                                let content = `<strong>⚠️ 库存预警 ⚠️</strong><br><br>商品条码: ${product.name}<br>当前库存: ${product.stock}<br>所在行: ${product.row}<br>批次: ${product.batch}<br><br>库存少于10个请及时补货！`;
+                                                                
+                                                                showCustomAlert('鹰眼系统提示您', content, function() {
+                                                                    lowStockIndex++;
+                                                                    showNextLowStockProduct();
+                                                                });
+                                                            }
+                                                        }
+                                                        
+                                                        // 显示第一个库存不足商品
+                                                        showNextLowStockProduct();
+                                                    }, 300);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // 显示第一个过期商品
+                                    showNextExpiredProduct();
+                                } else {
+                                    // 如果没有过期商品，直接显示临期商品详细信息
+                                    if (soonExpiredProducts && soonExpiredProducts.length > 0) {
+                                        setTimeout(() => {
+                                            console.log('开始显示临期商品详细信息');
+                                            let soonExpiredIndex = 0;
+                                            
+                                            function showNextSoonExpiredProduct() {
+                                                if (soonExpiredIndex < soonExpiredProducts.length) {
+                                                    const product = soonExpiredProducts[soonExpiredIndex];
+                                                    let content = `<strong>⚠️ 商品临期提醒 ⚠️</strong><br><br>商品条码: ${product.name}<br>过期日期: ${product.expireDate}<br>所在行: ${product.row}<br>剩余天数: ${product.daysRemaining}天<br>批次: ${product.batch}<br>当前库存: ${product.stock}<br><br>请及时申请营销政策`;
+                                                    
+                                                    showCustomAlert('鹰眼系统提示您', content, function() {
+                                                        soonExpiredIndex++;
+                                                        showNextSoonExpiredProduct();
+                                                    });
+                                                } else {
+                                                    // 临期商品显示完毕后，显示库存不足商品详细信息
+                                                    if (lowStockProducts && lowStockProducts.length > 0) {
+                                                        setTimeout(() => {
+                                                            console.log('开始显示库存不足商品详细信息');
+                                                            let lowStockIndex = 0;
+                                                            
+                                                            function showNextLowStockProduct() {
+                                                                if (lowStockIndex < lowStockProducts.length) {
+                                                                    const product = lowStockProducts[lowStockIndex];
+                                                                    let content = `<strong>⚠️ 库存预警 ⚠️</strong><br><br>商品条码: ${product.name}<br>当前库存: ${product.stock}<br>所在行: ${product.row}<br>批次: ${product.batch}<br><br>库存少于10个请及时补货！`;
+                                                                    
+                                                                    showCustomAlert('鹰眼系统提示您', content, function() {
+                                                                        lowStockIndex++;
+                                                                        showNextLowStockProduct();
+                                                                    });
+                                                                }
+                                                            }
+                                                            
+                                                            // 显示第一个库存不足商品
+                                                            showNextLowStockProduct();
+                                                        }, 300);
+                                                    }
+                                                }
+                                            }
+                                            
+                                            // 显示第一个临期商品
+                                            showNextSoonExpiredProduct();
+                                        }, 300);
+                                    } else {
+                                        // 如果没有过期和临期商品，直接显示库存不足商品详细信息
+                                        if (lowStockProducts && lowStockProducts.length > 0) {
+                                            setTimeout(() => {
+                                                console.log('开始显示库存不足商品详细信息');
+                                                let lowStockIndex = 0;
+                                                
+                                                function showNextLowStockProduct() {
+                                                    if (lowStockIndex < lowStockProducts.length) {
+                                                        const product = lowStockProducts[lowStockIndex];
+                                                        let content = `<strong>⚠️ 库存预警 ⚠️</strong><br><br>商品条码: ${product.name}<br>当前库存: ${product.stock}<br>所在行: ${product.row}<br>批次: ${product.batch}<br><br>库存少于10个请及时补货！`;
+                                                        
+                                                        showCustomAlert('鹰眼系统提示您', content, function() {
+                                                            lowStockIndex++;
+                                                            showNextLowStockProduct();
+                                                        });
+                                                    }
+                                                }
+                                                
+                                                // 显示第一个库存不足商品
+                                                showNextLowStockProduct();
+                                            }, 300);
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }, 100);
+                }
+                
+                // 渲染表格，并传递过期商品和临期商品行信息
+                renderTable(filteredData, expiredRows, soonExpiredRows);
+            }
+
+            // 存储过期商品和临期商品行信息的全局变量
+            let expiredRows = [];
+            let soonExpiredRows = [];
+            
+            // 渲染表格数据
+            function renderTable(data, expiredRowsData = [], soonExpiredRowsData = []) {
+                // 更新过期商品和临期商品行信息
+                expiredRows = expiredRowsData;
+                soonExpiredRows = soonExpiredRowsData;
+                tableBody.innerHTML = '';
+
+                if (data.length === 0) {
+                    const tr = document.createElement('tr');
+                    const td = document.createElement('td');
+                    td.colSpan = tableHeader.rows[0].cells.length;
+                    td.textContent = '没有匹配的数据';
+                    td.style.textAlign = 'center';
+                    td.style.padding = '20px';
+                    td.style.color = '#7f8c8d';
+                    tr.appendChild(td);
+                    tableBody.appendChild(tr);
+                    return;
+                }
+
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+
+                    // 创建数据单元格
+                    row.forEach((cell, index) => {
+                        if (columnVisibilityState[index] !== false) {
+                            const td = document.createElement('td');
+
+                            // 检测并转换Excel日期格式（数字转换为YYYY=MM-DD）
+                            let displayValue = cell;
+                            if (typeof cell === 'number' && cell > 25569 && cell < 50000) {
+                                try {
+                                    // Excel日期从1900-01-01开始，JavaScript从1970-01-01开始
+                                    // 调整Excel日期（注意：Excel错误地认为1900年是闰年）
+                                    const date = new Date((cell - 25569) * 86400000);
+                                    const year = String(date.getFullYear()); // 获取完整年份
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    displayValue = `${year}-${month}-${day}`;
+                                } catch (e) {
+                                    // 如果转换失败，保留原始值
+                                }
+                            }
+
+                            td.textContent = displayValue;
+                            tr.appendChild(td);
+                        }
+                    });
+
+                    // 添加条形码单元格
+                    if (qrColumnIndex !== -1 && row[qrColumnIndex]) {
+                        const qrTd = document.createElement('td');
+                        qrTd.className = 'barcode-cell';
+
+                        // 生成条形码
+                        generateBarcode(row[qrColumnIndex], qrTd);
+                        tr.appendChild(qrTd);
+                    }
+
+                    tableBody.appendChild(tr);
+                });
+
+                // 更新隐藏列的显示状态
+                updateColumnVisibility();
+            }
+
+            // 切换列可见性
+            function toggleColumnVisibility(columnIndex) {
+                columnVisibilityState[columnIndex] = !columnVisibilityState[columnIndex];
+
+                // 更新复选框状态
+                const checkbox = document.getElementById(`col-${columnIndex}`);
+                if (checkbox) {
+                    checkbox.checked = columnVisibilityState[columnIndex];
+                }
+
+                // 更新表格显示
+                updateColumnVisibility();
+            }
+
+            // 更新列可见性
+            function updateColumnVisibility() {
+                // 更新表头
+                const headerCells = tableHeader.rows[0].cells;
+                for (let i = 0; i < headerCells.length; i++) {
+                    const columnIndex = headerCells[i].getAttribute('data-column');
+                    if (columnIndex !== null) {
+                        if (columnVisibilityState[columnIndex] === false) {
+                            headerCells[i].classList.add('hidden-column');
+                        } else {
+                            headerCells[i].classList.remove('hidden-column');
+                        }
+                    }
+                }
+
+                // 更新数据行
+                const dataRows = tableBody.rows;
+                for (let i = 0; i < dataRows.length; i++) {
+                    const cells = dataRows[i].cells;
+                    for (let j = 0; j < cells.length; j++) {
+                        const columnIndex = j;
+                        if (columnVisibilityState[columnIndex] === false) {
+                            cells[j].classList.add('hidden-column');
+                        } else {
+                            cells[j].classList.remove('hidden-column');
+                        }
+                    }
+                }
+            }
+
+            // 表格排序
+            function sortTable(columnIndex) {
+                filteredData.sort((a, b) => {
+                    const valA = a[columnIndex] || '';
+                    const valB = b[columnIndex] || '';
+
+                    if (typeof valA === 'string' && typeof valB === 'string') {
+                        return valA.localeCompare(valB, 'zh-CN');
+                    }
+
+                    return valA - valB;
+                });
+
+                renderTable(filteredData);
+            }
+
+            // 应用全局筛选
+            function applyGlobalFilter() {
+                const filterText = globalFilter.value.toLowerCase();
+
+                if (!filterText) {
+                    filteredData = [...currentData];
+                    renderTable(filteredData);
+                    return;
+                }
+
+                filteredData = currentData.filter(row => {
+                    return row.some(cell => {
+                        if (cell !== null && cell !== undefined) {
+                            return cell.toString().toLowerCase().includes(filterText);
+                        }
+                        return false;
+                    });
+                });
+
+                renderTable(filteredData);
+            }
+
+            // 初始化语音
+            initSpeechSynthesis();
+        });
+
+        // 登录验证函数
+        function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('login-error');
+
+            // 处理输入，去除首尾空格 - 解决移动设备上可能出现的空格问题
+            const trimmedUsername = username.trim();
+            const trimmedPassword = password.trim();
+
+            // 验证用户名和密码
+            if (trimmedUsername === 'xjxs' && trimmedPassword === 'XJXS1234') {
+                // 登录成功
+                document.getElementById('login-screen').style.display = 'none';
+                document.querySelector('.main-content').style.display = 'block';
+                errorMsg.textContent = '';
+            } else {
+                // 登录失败
+                errorMsg.textContent = '用户名或密码错误，请重试';
+            }
+        }
+
+        // 添加登录表单的提交事件监听
+        document.addEventListener('DOMContentLoaded', function () {
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
+        });
+    </script>
+</body>
+
+</html>
